@@ -31,17 +31,20 @@
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
     "cli-table3": "^0.6.5",
     "commander": "^15.0.0",
-    "picocolors": "^1.1.1"
+    "picocolors": "^1.1.1",
+    "zod": "^4.6.7"
   },
   "bin": {
+    "gitmetrics": "./dist/index.js",
     "metrica": "./dist/index.js"
   },
   "files": [
     "dist"
   ],
   "engines": {
-    "node": "\u003e=22.13.0"
+    "node": ">=22.13.0"
   }
 }

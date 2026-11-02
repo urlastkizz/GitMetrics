@@ -27,7 +27,7 @@ cd GitMetrics
 npm ci
 ```
 
-The repository is named `GitMetrics`, the npm package is `gh-metrics-cli`, and the executable is `metrica`.
+The repository is named `GitMetrics`, the npm package is `gh-metrics-cli`, and the executables are `gitmetrics` and its alias `metrica`.
 
 ## Usage
 
@@ -50,7 +50,53 @@ node dist/index.js octocat
 node dist/index.js octocat --json
 ```
 
-The executable also accepts `--help` and `--version`. When installed as a package, its command name is `metrica`.
+The executable also accepts `--help` and `--version`. When installed as a package, use `gitmetrics` or `metrica`.
+
+### Repository metrics
+
+```sh
+gitmetrics repo octocat/Hello-World
+gitmetrics repo octocat/Hello-World --json
+gitmetrics repo octocat/Hello-World --no-color
+npm start -- repo octocat/Hello-World
+node dist/index.js repo octocat/Hello-World --json
+```
+
+The table shows stars, forks, open issues (excluding pull requests), open PRs, language percentages, and the last commit date. For example, fictional values:
+
+```text
+Metric              owner/name
+Stars               12
+Forks               2
+Open issues         3
+Open PRs            1
+Languages           TypeScript: 75.00%
+                    JavaScript: 25.00%
+Last commit (UTC)   2026-01-02T03:04:05.000Z
+```
+
+`--json` prints only a JSON object and a newline, with the same metrics:
+
+```json
+{
+  "repository": "owner/name",
+  "stars": 12,
+  "forks": 2,
+  "openIssues": 3,
+  "openPullRequests": 1,
+  "languages": [
+    { "name": "TypeScript", "percentage": 75 },
+    { "name": "JavaScript", "percentage": 25 }
+  ],
+  "lastCommitAt": "2026-01-02T03:04:05.000Z"
+}
+```
+
+Language percentages are bytes divided by total bytes, rounded independently to two decimals; their sum can differ slightly from 100. Languages are sorted by descending bytes, then name. An empty language response produces `[]` in JSON and `No languages` in the table.
+
+The last commit is the first commit returned for the default branch, using its committer date normalized to UTC. An empty repository produces `lastCommitAt: null` and `No commits` in the table. All open PR pages are counted before subtracting PRs from GitHub's combined issue count; inconsistent counts produce a retry message.
+
+Repository queries use `--token <token>` before `GITHUB_TOKEN`, or anonymous access when neither is set. Tokens are optional and never printed. Requests have a 15-second timeout without automatic retries. Rate-limit errors report the UTC reset time when GitHub supplies it. Invalid usage exits with `2`; failed queries exit with `1` on stderr and leave stdout empty. Successful queries exit with `0`. Private repositories and caching are outside this command's scope.
 
 ### Example output
 
@@ -90,7 +136,7 @@ GET https://api.github.com/users/{username}/repos?type=owner&sort=created&direct
 
 Each request has a 15-second timeout. Missing usernames and invalid options exit with code `2`; failed queries exit with code `1`. Successful queries, help, and version output exit with code `0`.
 
-Requests use public data without authentication. The current implementation does not read `GITHUB_TOKEN` or access private repositories. GitHub API rate limits still apply; rate-limit and network failures currently use the general query error message.
+Profile requests use public data without authentication. Profile queries do not read `GITHUB_TOKEN`; their rate-limit and network failures use the general query error message. Repository queries use the separate authenticated or anonymous client described above.
 
 ## Development
 
@@ -98,14 +144,14 @@ Requests use public data without authentication. The current implementation does
 src/
   index.ts          # Executable entry point
   cli/              # Argument parsing and current profile implementation
-  core/             # Reserved for pure metric calculations
-  github/           # Reserved for API access
-  output/           # Reserved for formatters
-  config/           # Reserved for configuration
+  core/             # Pure repository metric calculations and project types
+  github/           # Octokit client, validation, pagination, and errors
+  output/           # Repository table and JSON formatting
+  config/           # Optional token resolution
   utils/            # Reserved for shared helpers
 tests/
   integration/      # CLI smoke tests and mocked GitHub queries
-  unit/             # Reserved for pure metric tests
+  unit/             # Core, client, formatter, configuration, and command tests
 .github/workflows/  # CI checks
 ```
 
@@ -129,7 +175,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch, commit, and verification 
 ## Next steps
 
 - Aggregate stars, forks, and languages across paginated repositories.
-- Optional authentication with `GITHUB_TOKEN`.
 - Separate API access, metric calculations, and output formatting.
 - Expand tests as metrics and error handling are added.
 

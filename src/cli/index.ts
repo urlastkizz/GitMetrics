@@ -1,13 +1,20 @@
 import { Command, CommanderError } from 'commander';
 import { version } from '../../package.json';
 import { showProfile } from './profile.js';
+import { registerRepoCommand } from './commands/repo.js';
+import type { RepositoryLoader } from '../core/types.js';
 
-export async function runCli(args: string[]): Promise<void> {
+export async function runCli(
+  args: string[],
+  repositoryLoader: RepositoryLoader = async () => {
+    throw new Error('Repository loader is unavailable.');
+  },
+): Promise<void> {
   const program = new Command();
   program
     .name('metrica')
     .description(
-      'Show a GitHub profile and its five newest public repositories.',
+      'Show GitHub profiles and public repository metrics (gitmetrics or metrica).',
     )
     .version(version)
     .argument('[username]', 'GitHub username without @ or a URL')
@@ -25,6 +32,7 @@ export async function runCli(args: string[]): Promise<void> {
         await showProfile(trimmed, options.json ?? false);
       },
     );
+  registerRepoCommand(program, repositoryLoader);
 
   try {
     await program.parseAsync(args);
