@@ -1,0 +1,75 @@
+# Guardrails de git para agentes do Codex (GitMetrics).
+# Instalacao: copie para ~/.codex/rules/gitmetrics.rules
+# Teste:      codex execpolicy check --rules ~/.codex/rules/gitmetrics.rules git push origin main
+#
+# Limite importante: prefix_rule so casa o INICIO do comando. Variacoes como
+# `git -C pasta push ...` ou `git push origin HEAD:main` podem escapar.
+# A protecao de verdade e a regra de branch protection no GitHub (veja o guia).
+
+prefix_rule(
+    pattern = ["git", "push", "origin", ["main", "master"]],
+    decision = "forbidden",
+    justification = "Push direto na main e proibido. Use uma branch de trabalho e abra um PR.",
+    match = [["git", "push", "origin", "main"]],
+    not_match = [["git", "push", "origin", "feat/repo-command"]],
+)
+
+prefix_rule(
+    pattern = ["git", "push", ["--force", "-f", "--force-with-lease", "--mirror", "--delete", "-d"]],
+    decision = "forbidden",
+    justification = "Force push, mirror e apagar branch remota ficam com o autor.",
+    match = [["git", "push", "--force", "origin", "feat/x"]],
+)
+
+prefix_rule(
+    pattern = ["git", "push", "origin", ["--force", "-f", "--force-with-lease", "--delete", "-d"]],
+    decision = "forbidden",
+    justification = "Force push e apagar branch remota ficam com o autor.",
+    match = [["git", "push", "origin", "--force", "feat/x"]],
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "reset --hard apaga trabalho nao commitado. Peca ao autor.",
+    match = [["git", "reset", "--hard", "origin/main"]],
+    not_match = [["git", "reset", "--soft", "HEAD~1"]],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", ["-f", "-fd", "-fx", "-fdx", "-xfd", "--force"]],
+    decision = "forbidden",
+    justification = "git clean -f apaga arquivos nao rastreados. Use git clean -n para simular.",
+    match = [["git", "clean", "-fd"]],
+    not_match = [["git", "clean", "-n"]],
+)
+
+prefix_rule(
+    pattern = ["git", "branch", ["-D", "--force"]],
+    decision = "forbidden",
+    justification = "branch -D apaga sem checar merge. Use -d, que recusa branch nao mergeada.",
+    match = [["git", "branch", "-D", "feat/x"]],
+    not_match = [["git", "branch", "-d", "feat/x"]],
+)
+
+prefix_rule(
+    pattern = ["git", ["checkout", "restore"], "."],
+    decision = "forbidden",
+    justification = "Descarta todas as alteracoes do diretorio. Restaure arquivos especificos.",
+    match = [["git", "restore", "."]],
+    not_match = [["git", "restore", "--staged", "src/index.ts"]],
+)
+
+prefix_rule(
+    pattern = ["git", "checkout", "--", "."],
+    decision = "forbidden",
+    justification = "Descarta todas as alteracoes do diretorio. Restaure arquivos especificos.",
+    match = [["git", "checkout", "--", "."]],
+)
+
+prefix_rule(
+    pattern = ["npm", "publish"],
+    decision = "forbidden",
+    justification = "Publicacao no npm e feita pelo CI com confirmacao do autor.",
+    match = [["npm", "publish"]],
+)
