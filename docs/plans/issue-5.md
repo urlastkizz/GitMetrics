@@ -1,6 +1,6 @@
 # Issue #5: user activity command
 
-Status: awaiting author approval of this implementation plan.
+Status: plan approved by the author; implementation passed test audit and code review.
 Size: M (issue label). Workflow: medium path.
 Branch: `feat/5-activity-command`.
 Base SHA: `2711c176141e906a8a3fc96c2b54477df1b71b89`.
