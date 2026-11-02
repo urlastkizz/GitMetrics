@@ -1,10 +1,10 @@
-# AGENTS.md — gh-metrics CLI
+# AGENTS.md — GitMetrics CLI
 
 Instruções para agentes de IA (Copilot, Claude Code, Cursor etc.) neste repositório.
 
 ## Contexto
 
-**gh-metrics** é uma CLI em TypeScript/Node.js que mostra métricas de repositórios e usuários do GitHub (commits, PRs, issues, linguagens, atividade).
+**GitMetrics** é uma CLI em TypeScript/Node.js que mostra métricas de repositórios e usuários do GitHub (commits, PRs, issues, linguagens, atividade).
 É um projeto de portfólio **público**: qualidade, clareza e boas práticas importam mais que quantidade de features.
 
 O autor é estudante de Ciência da Computação (iniciante). Então:
@@ -103,18 +103,18 @@ Uma tarefa só está pronta quando:
 - `LICENSE` (MIT), `.gitignore`, `CONTRIBUTING.md` curto
 
 **Fase 2 — MVP**
-- `metrica auth` / leitura de `GITHUB_TOKEN`
-- `metrica repo <owner/name>` → stars, forks, issues, PRs, linguagens
+- `gitmetrics auth` / leitura de `GITHUB_TOKEN`
+- `gitmetrics repo <owner/name>` → stars, forks, issues, PRs, linguagens
 - Saída em tabela e `--json`
 
 **Fase 3 — Métricas de verdade**
-- `metrica activity <user>` → commits por período, dias ativos, streak
-- `metrica prs <owner/name>` → tempo médio de merge, taxa de aprovação
+- `gitmetrics activity <user>` → commits por período, dias ativos, streak
+- `gitmetrics prs <owner/name>` → tempo médio de merge, taxa de aprovação
 - Cache local + tratamento de rate limit
 
 **Fase 4 — Polimento (o que destaca no currículo)**
 - README forte: GIF/demo do terminal, instalação, exemplos, badges (CI, versão, licença)
-- Publicar no npm (`npx metrica`)
+- Publicar no npm (`npx gitmetrics`)
 - Releases automáticas e CHANGELOG
 - Issues/Milestones organizados no GitHub
 - `docs/ARCHITECTURE.md` explicando decisões

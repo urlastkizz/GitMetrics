@@ -9,7 +9,7 @@ Built to practice TypeScript, asynchronous API requests, automated testing, and 
 - Profile card with name, bio, followers, and public repository count.
 - Up to five public repositories, ordered from newest to oldest by **creation date**.
 - Repository name, primary language, stars, forks, and link.
-- Terminal tables with colors and numbers formatted for Brazilian Portuguese.
+- Terminal tables with colors and numbers formatted for English.
 - JSON output for scripts, plus help and version options.
 - Recent user contribution totals, active days, and busiest day using the GitHub contribution calendar.
 - Messages for missing profile fields, empty repository lists, and failed requests.
@@ -28,7 +28,7 @@ cd GitMetrics
 npm ci
 ```
 
-The repository is named `GitMetrics`, the npm package is `gh-metrics-cli`, and the executables are `gitmetrics` and its alias `metrica`.
+The product is named GitMetrics; the npm package and executable are named `gitmetrics`.
 
 ## Usage
 
@@ -51,7 +51,7 @@ node dist/index.js octocat
 node dist/index.js octocat --json
 ```
 
-The executable also accepts `--help` and `--version`. When installed as a package, use `gitmetrics` or `metrica`.
+The executable also accepts `--help` and `--version`. When installed as a package, use `gitmetrics`.
 
 ### Repository metrics
 
@@ -144,22 +144,22 @@ A period without contributions keeps its requested dates, returns both totals as
 
 ### Example output
 
-Illustrative output with fictional values. Terminal output also includes colors; column widths adapt to the terminal. The current table labels and query errors are in Brazilian Portuguese.
+Illustrative output with fictional values. Terminal output also includes colors; column widths adapt to the terminal. Table labels and query errors are in English.
 
 ```text
 ┌────────────────────────┬───────────────────────────┐
-│ PERFIL DO GITHUB · @example                         │
+│ GITHUB PROFILE · @example                          │
 ├────────────────────────┼───────────────────────────┤
-│ Nome                   │ Example Person            │
+│ Name                   │ Example Person            │
 │ Bio                    │ Learning TypeScript       │
-│ Seguidores             │ 120                       │
-│ Repositórios Públicos  │ 1                         │
+│ Followers              │ 120                       │
+│ Public repositories    │ 1                         │
 └────────────────────────┴───────────────────────────┘
 
-REPOSITÓRIOS MAIS RECENTES · por data de criação
+LATEST REPOSITORIES · by creation date
 ┌────────────┬────────────┬──────────┬───────┬────────────────────────────────────────────┐
-│ Nome       │ Linguagem  │ Estrelas │ Forks │ Link                                       │
-│            │ Principal  │          │       │                                            │
+│ Name       │ Primary    │ Stars    │ Forks │ Link                                       │
+│            │ language   │          │       │                                            │
 ├────────────┼────────────┼──────────┼───────┼────────────────────────────────────────────┤
 │ GitMetrics │ TypeScript │       12 │     2 │ https://github.com/example/GitMetrics       │
 └────────────┴────────────┴──────────┴───────┴────────────────────────────────────────────┘

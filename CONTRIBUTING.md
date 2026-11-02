@@ -27,7 +27,7 @@ node dist/index.js --help
 
 Use `npm run dev -- octocat` while editing and `npm run format` to format files.
 
-The executable is named `metrica`. `npm start -- <username>` keeps the existing
+The executable is named `gitmetrics`. `npm start -- <username>` keeps the existing
 profile query; `--json` prints its raw profile and repository responses as JSON.
 Usage errors exit with code 2; query failures exit with code 1.
 

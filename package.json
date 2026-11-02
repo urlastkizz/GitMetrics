@@ -1,5 +1,5 @@
 {
-  "name": "gh-metrics-cli",
+  "name": "gitmetrics",
   "version": "1.0.0",
   "description": "GitHub profile and repository metrics in the terminal",
   "main": "./dist/index.js",
@@ -38,8 +38,7 @@
     "zod": "^4.6.7"
   },
   "bin": {
-    "gitmetrics": "./dist/index.js",
-    "metrica": "./dist/index.js"
+    "gitmetrics": "./dist/index.js"
   },
   "files": [
     "dist"

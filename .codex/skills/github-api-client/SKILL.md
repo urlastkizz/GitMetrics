@@ -12,7 +12,7 @@ Tudo que fala com a API fica em `src/github/`. O resto do projeto nunca importa 
 3. Use `octokit.paginate` / `paginate.iterator` para listas; permita limite (`--limit`) para não baixar tudo sem necessidade.
 4. Rate limit: leia `x-ratelimit-remaining` e `x-ratelimit-reset`. Se 403/429, mostre quando o limite reseta e saia com erro amigável.
 5. Mapeie erros: 401 → token inválido; 404 → repo/usuário não encontrado (ou sem acesso); rede → "sem conexão".
-6. Cache opcional em `~/.cache/metrica/` com TTL curto (ex. 5 min) e flag `--no-cache`. Só implemente se pedido.
+6. Cache opcional em `~/.cache/gitmetrics/` com TTL curto (ex. 5 min) e flag `--no-cache`. Só implemente se pedido.
 7. Testes: mock do cliente (injeção de dependência ou `vi.mock`). **Nunca** chame a API real em testes.
 
 Commit sugerido: `feat(github): add <busca> fetcher`.

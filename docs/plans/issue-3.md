@@ -24,7 +24,7 @@ The author approved option A: use the first commit returned for the default bran
 
 ## Proposed contracts
 
-- Add the `gitmetrics` executable, preserving `metrica` as an alias to `dist/index.js`.
+- Add the `gitmetrics` executable pointing to `dist/index.js`.
 - Register `repo <owner/name>` with `--json`, `--no-color`, and `--token <token>`.
 - An explicit token overrides `GITHUB_TOKEN`; no token allows anonymous requests.
 - Preserve the existing username command and its JSON output.
@@ -69,8 +69,8 @@ These figures come from the planner's `npm view` lookup and are not final bundle
 
 - Files: `package.json`, `package-lock.json`.
 - Criteria: 1, 2. Depends on: none.
-- Add approved dependencies and `gitmetrics` bin while retaining `metrica`.
-- Verification: both bins point to the same entry point; the existing profile JSON test remains green.
+- Add approved dependencies and the `gitmetrics` bin.
+- Verification: the bin points to the entry point; the existing profile JSON test remains green.
 
 ### 2. Optional authentication
 
