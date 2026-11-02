@@ -27,6 +27,7 @@ describe('CLI', () => {
     expect(result.stdout).toContain('metrica');
     expect(result.stdout).toContain('[username]');
     expect(result.stdout).toContain('--json');
+    expect(result.stdout).toContain('repo');
     expect(result.stderr).toBe('');
   });
 
