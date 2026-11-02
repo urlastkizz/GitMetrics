@@ -1,6 +1,6 @@
 ---
 name: add-cli-command
-description: Use ao criar ou alterar um comando da CLI (ex. metrica repo, metrica activity), incluindo argumentos, flags, help e saída. Não use para lógica de métricas.
+description: Use ao criar ou alterar um comando da CLI (ex. gitmetrics repo, gitmetrics activity), incluindo argumentos, flags, help e saída. Não use para lógica de métricas.
 ---
 
 # Adicionar um comando à CLI

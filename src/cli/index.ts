@@ -17,10 +17,8 @@ export async function runCli(
 ): Promise<void> {
   const program = new Command();
   program
-    .name('metrica')
-    .description(
-      'Show GitHub profiles and public repository metrics (gitmetrics or metrica).',
-    )
+    .name('gitmetrics')
+    .description('Show GitHub profiles and public repository metrics.')
     .version(version)
     .argument('[username]', 'GitHub username without @ or a URL')
     .option('--json', 'Output profile and repositories as JSON')
@@ -29,9 +27,12 @@ export async function runCli(
       async (username: string | undefined, options: { json?: boolean }) => {
         const trimmed = username?.trim();
         if (!trimmed) {
-          program.error('Provide a GitHub username. Example: metrica octocat', {
-            exitCode: 2,
-          });
+          program.error(
+            'Provide a GitHub username. Example: gitmetrics octocat',
+            {
+              exitCode: 2,
+            },
+          );
           return;
         }
         await showProfile(trimmed, options.json ?? false);

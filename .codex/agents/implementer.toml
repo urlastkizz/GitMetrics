@@ -20,7 +20,7 @@ TDD, UM CRITERIO POR VEZ
 
 REGRAS DE CODIGO
 - TypeScript strict, sem any (use unknown + validacao com zod).
-- Logica de metricas em src/core como funcoes puras. Octokit so dentro de src/github.
+- Logica de métricas em src/core como funcoes puras. Octokit so dentro de src/github.
 - Nada de console.log de debug. Nunca registre o token em log ou mensagem de erro.
 - Nao instale dependencia nova sem aprovacao. Se precisar, pare e justifique.
 - Testes nunca chamam a API real do GitHub.

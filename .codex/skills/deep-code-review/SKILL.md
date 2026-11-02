@@ -11,7 +11,7 @@ O objetivo e um codigo pequeno, direto e facil de explicar. "Funciona" nao basta
 ## Perguntas para cada mudanca relevante
 
 1. **Da para apagar em vez de arrumar?** Existe um jeito de reformular a mudanca para sumirem ramos, helpers ou camadas?
-2. **Camada certa?** Logica de metrica em `src/core`; Octokit so em `src/github`; formatacao em `src/output`; comando so faz parse, chamada e saida.
+2. **Camada certa?** Logica de métrica em `src/core`; Octokit so em `src/github`; formatacao em `src/output`; comando so faz parse, chamada e saida.
 3. **Condicional avulsa?** `if` novo enfiado num fluxo existente para tratar um caso especial pede uma abstracao propria ou um modelo melhor.
 4. **Abstracao que se paga?** Wrapper que so repassa chamada, classe ou factory para uso unico, interface com um unico implementador: indirecao sem ganho.
 5. **Tipos honestos?** `any`, cast (`as`), opcional demais ou objeto de formato solto escondendo uma regra que deveria estar explicita em tipo ou schema `zod`.
