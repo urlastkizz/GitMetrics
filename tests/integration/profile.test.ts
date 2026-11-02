@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { stripVTControlCharacters } from 'node:util';
 import { showProfile } from '../../src/cli/profile.js';
 
 afterEach(() => {
@@ -8,6 +10,64 @@ afterEach(() => {
 });
 
 describe('profile query', () => {
+  it.each([true, false])(
+    'keeps table cells readable with colors enabled: %s',
+    (color) => {
+      const env: NodeJS.ProcessEnv = { ...process.env, CI: 'true' };
+      delete env.NO_COLOR;
+      delete env.FORCE_COLOR;
+      if (color) env.FORCE_COLOR = '1';
+      else env.NO_COLOR = '1';
+      const result = spawnSync(
+        process.execPath,
+        [
+          '--import',
+          'tsx',
+          '--input-type=module',
+          '-e',
+          `
+      import { showProfile } from './src/cli/profile.ts';
+      const profile = { login: 'octocat', name: null, bio: null, followers: 1234, public_repos: 1234 };
+      const repositories = [{ name: 'example', language: null, stargazers_count: 1234, forks_count: 2345, html_url: 'https://github.com/octocat/example' }];
+      globalThis.fetch = async (url) => new Response(JSON.stringify(String(url).includes('/repos?') ? repositories : profile));
+      await showProfile('octocat', false);
+    `,
+        ],
+        { encoding: 'utf8', env, timeout: 10000 },
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout.includes('\u001b[')).toBe(color);
+      const plain = stripVTControlCharacters(result.stdout);
+      const rows = plain
+        .split('\n')
+        .filter((line) => line.startsWith('│'))
+        .map((line) =>
+          line
+            .split('│')
+            .slice(1, -1)
+            .map((cell) => cell.trim()),
+        );
+      expect(rows).toContainEqual([
+        'Name',
+        'Primary',
+        'Stars',
+        'Forks',
+        'Link',
+      ]);
+      expect(rows).toContainEqual([
+        'example',
+        'Not provided',
+        '1,234',
+        '2,345',
+        'https://github.com/octocat/example',
+      ]);
+      expect(rows).toContainEqual(['Followers', '1,234']);
+      expect(rows).toContainEqual(['Public repositories', '1,234']);
+      expect(plain).not.toContain('\u001b');
+    },
+  );
   it('prints valid JSON with profile and repositories', async () => {
     const profile = { login: 'octocat', public_repos: 0, followers: 2 };
     const fetchMock = vi

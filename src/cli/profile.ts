@@ -75,8 +75,8 @@ function displayRepositories(repositories: GitHubRepository[]): void {
     ),
     colWidths: [20, 20, 10, 8, width - 64],
     colAligns: ['left', 'left', 'right', 'right', 'left'],
+    // Word-boundary wrapping measures visible text; character wrapping splits ANSI codes.
     wordWrap: true,
-    wrapOnWordBoundary: false,
     style: { head: [], border: [] },
   });
 
