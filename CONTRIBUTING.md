@@ -26,7 +26,6 @@ node dist/index.js --help
 ```
 
 Use `npm run dev -- octocat` while editing and `npm run format` to format files.
-Formatting currently excludes README.md to preserve its pending edits.
 
 The executable is named `metrica`. `npm start -- <username>` keeps the existing
 profile query; `--json` prints its raw profile and repository responses as JSON.
