@@ -11,6 +11,7 @@ Built to practice TypeScript, asynchronous API requests, automated testing, and 
 - Repository name, primary language, stars, forks, and link.
 - Terminal tables with colors and numbers formatted for Brazilian Portuguese.
 - JSON output for scripts, plus help and version options.
+- Recent user contribution totals, active days, and busiest day using the GitHub contribution calendar.
 - Messages for missing profile fields, empty repository lists, and failed requests.
 
 ## Requirements
@@ -97,6 +98,49 @@ Language percentages are bytes divided by total bytes, rounded independently to 
 The last commit is the first commit returned for the default branch, using its committer date normalized to UTC. An empty repository produces `lastCommitAt: null` and `No commits` in the table. All open PR pages are counted before subtracting PRs from GitHub's combined issue count; inconsistent counts produce a retry message.
 
 Repository queries use `--token <token>` before `GITHUB_TOKEN`, or anonymous access when neither is set. Tokens are optional and never printed. Requests have a 15-second timeout without automatic retries. Rate-limit errors report the UTC reset time when GitHub supplies it. Invalid usage exits with `2`; failed queries exit with `1` on stderr and leave stdout empty. Successful queries exit with `0`. Private repositories and caching are outside this command's scope.
+
+### User activity
+
+```sh
+gitmetrics activity octocat
+gitmetrics activity octocat --days 7 --json
+gitmetrics activity octocat --days 365 --no-color
+npm start -- activity octocat --days 7
+node dist/index.js activity octocat --days 7 --json
+```
+
+Activity requires a GitHub token. Set `GITHUB_TOKEN` in your environment or use `--token <token>`; the explicit option takes precedence. Missing or blank tokens produce guidance on stderr and exit `1`. Invalid usernames or `--days` values exit `2` before authentication or API access.
+
+The default period is the last 30 UTC calendar days, including today. `--days` accepts decimal integers from 1 through 365. The start is UTC midnight on the first day; the end is one captured current instant. Today's contributions are therefore partial. The same period is used for the GraphQL query, calculations, and output, including across year boundaries and leap days.
+
+The command uses GitHub GraphQL `contributionsCollection` calendar days, rather than repository commit counts or annual totals. Counts reflect the contributions GitHub exposes for the user and token. Total contributions are the sum of the daily counts in the requested period; active days have at least one contribution. The busiest day is the date with the highest count; ties select the most recent date. Calendar padding outside the requested dates is excluded.
+
+Illustrative table values:
+
+```text
+Metric                octocat
+Days                  2
+Period (UTC)          2026-01-01 to 2026-01-02
+Total contributions   3
+Active days           1
+Busiest day           2026-01-02 (3 contributions)
+```
+
+`--json` prints exactly one JSON object and a newline, with the canonical GitHub login:
+
+```json
+{
+  "user": "octocat",
+  "days": 2,
+  "startDate": "2026-01-01",
+  "endDate": "2026-01-02",
+  "totalContributions": 3,
+  "activeDays": 1,
+  "busiestDay": { "date": "2026-01-02", "count": 3 }
+}
+```
+
+A period without contributions keeps its requested dates, returns both totals as `0`, and uses `busiestDay: null` in JSON or `No contributions` in the table. Missing users, invalid credentials, permissions, rate limits, and service/network failures exit `1` with safe stderr messages and no stdout. Partial GraphQL responses with errors are rejected. Requests share the repository client's effective 15-second deadline and do not retry automatically. Successful queries exit `0`. Streaks, charts, contribution breakdowns, and caching are outside this command's scope.
 
 ### Example output
 

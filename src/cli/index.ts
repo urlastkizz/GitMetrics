@@ -3,11 +3,16 @@ import { version } from '../../package.json';
 import { showProfile } from './profile.js';
 import { registerRepoCommand } from './commands/repo.js';
 import type { RepositoryLoader } from '../core/types.js';
+import { registerActivityCommand } from './commands/activity.js';
+import type { ActivityLoader } from '../core/activity-types.js';
 
 export async function runCli(
   args: string[],
   repositoryLoader: RepositoryLoader = async () => {
     throw new Error('Repository loader is unavailable.');
+  },
+  activityLoader: ActivityLoader = async () => {
+    throw new Error('Activity loader is unavailable.');
   },
 ): Promise<void> {
   const program = new Command();
@@ -33,6 +38,7 @@ export async function runCli(
       },
     );
   registerRepoCommand(program, repositoryLoader);
+  registerActivityCommand(program, activityLoader);
 
   try {
     await program.parseAsync(args);
