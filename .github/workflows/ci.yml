@@ -27,3 +27,11 @@ jobs:
       - run: npm run build
       - run: node dist/index.js --version
       - run: node dist/index.js --help
+
+  build:
+    needs: check
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every Node.js check to pass
+        run: test '${{ needs.check.result }}' = 'success'
