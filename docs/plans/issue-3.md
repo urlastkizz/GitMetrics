@@ -1,6 +1,6 @@
 # Issue #3: repository metrics command
 
-Status: awaiting author approval before implementation.
+Status: plan and dependencies approved by the author; implementation passed test audit and code review.
 Size: M (issue label). Workflow: medium path.
 Branch: `feat/3-repo-command`.
 Base SHA: `3b48e816d071fcadb593cb06ecdba81d4e8c1a61`.
@@ -56,10 +56,10 @@ The author approved option A: use the first commit returned for the default bran
 
 No dependencies will be installed before plan approval.
 
-| Package | Purpose | Registry size reported by planner | Native alternative |
-| --- | --- | --- | --- |
-| `@octokit/rest` | Required GitHub client, typed endpoints and pagination | Version 22.0.1: 8,276 direct unpacked bytes, excluding transitives | `fetch`, with manual pagination and HTTP handling |
-| `zod` | Validate arguments and consumed API fields as required by project rules | Version 4.6.7: 6,148,944 unpacked bytes | Manual validators/type guards |
+| Package         | Purpose                                                                 | Registry size reported by planner                                  | Native alternative                                |
+| --------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------- |
+| `@octokit/rest` | Required GitHub client, typed endpoints and pagination                  | Version 22.0.1: 8,276 direct unpacked bytes, excluding transitives | `fetch`, with manual pagination and HTTP handling |
+| `zod`           | Validate arguments and consumed API fields as required by project rules | Version 4.6.7: 6,148,944 unpacked bytes                            | Manual validators/type guards                     |
 
 These figures come from the planner's `npm view` lookup and are not final bundle sizes. Reuse existing `commander`, `cli-table3`, and `picocolors`; do not replace the output stack in this task.
 
