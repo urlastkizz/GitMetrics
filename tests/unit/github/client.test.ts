@@ -3,11 +3,10 @@ import { createGitHubClient } from '../../../src/github/client.js';
 import { githubError } from '../../../src/github/errors.js';
 
 describe('GitHub client errors', () => {
-  it('creates anonymous and authenticated clients with a finite timeout', () => {
+  it('configures a finite request timeout', () => {
     expect(
       createGitHubClient().request.endpoint.DEFAULTS.request?.timeout,
     ).toBe(15000);
-    expect(createGitHubClient('secret')).toBeDefined();
   });
   it('sends authentication only when a token is supplied', async () => {
     const headers: (string | null)[] = [];

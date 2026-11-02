@@ -53,17 +53,25 @@ it('runs the complete table flow from mocked API to terminal', async () => {
     loader,
   );
   const output = stdout.mock.calls.flat().join('');
-  for (const value of [
-    'Stars',
-    '12',
-    'Forks',
-    'Open issues',
-    '3',
-    'Open PRs',
-    'TypeScript: 75.00%',
-    '2026-01-02T03:04:05.000Z',
-  ])
-    expect(output).toContain(value);
+  const rows = output
+    .split('\n')
+    .filter((line) => line.startsWith('│'))
+    .map((line) =>
+      line
+        .split('│')
+        .slice(1, -1)
+        .map((cell) => cell.trim()),
+    );
+  expect(rows).toEqual([
+    ['Metric', 'owner/name'],
+    ['Stars', '12'],
+    ['Forks', '2'],
+    ['Open issues', '3'],
+    ['Open PRs', '1'],
+    ['Languages', 'TypeScript: 75.00%'],
+    ['', 'JavaScript: 25.00%'],
+    ['Last commit (UTC)', '2026-01-02T03:04:05.000Z'],
+  ]);
   expect(fetch).toHaveBeenCalledTimes(4);
   expect(stderr).not.toHaveBeenCalled();
 });
@@ -91,11 +99,17 @@ it.each([
 it.each([['repo', 'invalid'], ['repo']])(
   'rejects invalid usage without API calls: %j',
   async (...args) => {
-    const { loader, fetch, stdout } = setup();
+    const { loader, fetch, stdout, stderr } = setup();
     await runCli(['node', 'gitmetrics', ...args], loader);
     expect(process.exitCode).toBe(2);
     expect(fetch).not.toHaveBeenCalled();
     expect(stdout).not.toHaveBeenCalled();
+    expect(loader).not.toHaveBeenCalled();
+    expect(stderr.mock.calls.flat().join('')).toBe(
+      args.length === 1
+        ? "error: missing required argument 'owner/name'\n"
+        : 'Expected owner/name. Example: gitmetrics repo octocat/Hello-World\n',
+    );
   },
 );
 it.each([

@@ -1,4 +1,4 @@
-import { Command, CommanderError } from 'commander';
+import { Command } from 'commander';
 import { afterEach, expect, it, vi } from 'vitest';
 import { registerRepoCommand } from '../../../src/cli/commands/repo.js';
 
@@ -47,19 +47,27 @@ it('prints only JSON', async () => {
 it.each(['invalid', 'a/b/c', 'https://github.com/a/b', 'a /b', 'a/b?x'])(
   'rejects invalid repository %s before loading',
   async (argument) => {
-    const { program, loader } = setup();
+    const { program, loader, stdout, stderr } = setup();
     await expect(
       program.parseAsync(['repo', argument], { from: 'user' }),
     ).rejects.toMatchObject({ exitCode: 2 });
     expect(loader).not.toHaveBeenCalled();
+    expect(stdout).not.toHaveBeenCalled();
+    expect(stderr.mock.calls.flat().join('')).toBe(
+      'Expected owner/name. Example: gitmetrics repo octocat/Hello-World\n',
+    );
   },
 );
 it('reports missing arguments as usage errors', async () => {
-  const { program, loader } = setup();
+  const { program, loader, stdout, stderr } = setup();
   await expect(
     program.parseAsync(['repo'], { from: 'user' }),
-  ).rejects.toBeInstanceOf(CommanderError);
+  ).rejects.toMatchObject({ exitCode: 1 });
   expect(loader).not.toHaveBeenCalled();
+  expect(stdout).not.toHaveBeenCalled();
+  expect(stderr.mock.calls.flat().join('')).toBe(
+    "error: missing required argument 'owner/name'\n",
+  );
 });
 it.each([
   'Repository not found.',

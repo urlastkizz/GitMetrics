@@ -7,26 +7,34 @@ const metrics = {
   forks: 2,
   openIssues: 3,
   openPullRequests: 1,
-  languages: [{ name: 'TypeScript', percentage: 75 }],
+  languages: [
+    { name: 'TypeScript', percentage: 75 },
+    { name: 'JavaScript', percentage: 25 },
+  ],
   lastCommitAt: '2026-01-02T03:04:05.000Z',
 };
 
 it('renders all metrics and two-decimal percentages without ANSI', () => {
   const output = formatRepository(metrics, { color: false });
-  for (const value of [
-    'owner/name',
-    'Stars',
-    '12',
-    'Forks',
-    '2',
-    'Open issues',
-    '3',
-    'Open PRs',
-    '1',
-    'TypeScript: 75.00%',
-    metrics.lastCommitAt,
-  ])
-    expect(output).toContain(value);
+  const rows = output
+    .split('\n')
+    .filter((line) => line.startsWith('│'))
+    .map((line) =>
+      line
+        .split('│')
+        .slice(1, -1)
+        .map((cell) => cell.trim()),
+    );
+  expect(rows).toEqual([
+    ['Metric', 'owner/name'],
+    ['Stars', '12'],
+    ['Forks', '2'],
+    ['Open issues', '3'],
+    ['Open PRs', '1'],
+    ['Languages', 'TypeScript: 75.00%'],
+    ['', 'JavaScript: 25.00%'],
+    ['Last commit (UTC)', metrics.lastCommitAt],
+  ]);
   expect(output).not.toContain('\u001b');
 });
 it('returns only equivalent valid JSON', () => {
