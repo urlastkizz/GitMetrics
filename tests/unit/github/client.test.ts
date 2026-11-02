@@ -5,6 +5,30 @@ import { githubError } from '../../../src/github/errors.js';
 afterEach(() => vi.useRealTimers());
 
 describe('GitHub client errors', () => {
+  it('applies authentication and an effective deadline to GraphQL requests', async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | null | undefined;
+    let authorization: string | null = null;
+    const fetchMock: typeof fetch = (_input, init) =>
+      new Promise((_resolve, reject) => {
+        signal = init?.signal;
+        authorization = new Headers(init?.headers).get('authorization');
+        signal?.addEventListener('abort', () => reject(signal?.reason), {
+          once: true,
+        });
+      });
+    const response = createGitHubClient('test-placeholder', fetchMock).graphql(
+      'query { viewer { login } }',
+    );
+    const rejected = expect(response).rejects.toThrow();
+    await vi.advanceTimersByTimeAsync(14999);
+    expect(authorization).toBe('token test-placeholder');
+    expect(signal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await rejected;
+    expect(signal?.aborted).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it('aborts stalled requests after 15 seconds and gives each request a fresh deadline', async () => {
     vi.useFakeTimers();
     const signals: AbortSignal[] = [];

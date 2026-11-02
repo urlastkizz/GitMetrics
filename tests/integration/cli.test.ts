@@ -28,6 +28,7 @@ describe('CLI', () => {
     expect(result.stdout).toContain('[username]');
     expect(result.stdout).toContain('--json');
     expect(result.stdout).toContain('repo');
+    expect(result.stdout).toContain('activity');
     expect(result.stderr).toBe('');
   });
 
