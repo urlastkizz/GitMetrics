@@ -3,31 +3,38 @@ import { calculateActivityMetrics } from '../../../src/core/metrics/activity.js'
 import { createActivityPeriod } from '../../../src/core/activity-period.js';
 
 const period = createActivityPeriod(new Date('2026-01-02T03:04:05Z'), 3);
-it('sums only the requested unordered dates and picks the most recent tied day', () => {
-  const result = calculateActivityMetrics(
-    {
+it.each(['newest first', 'oldest first'])(
+  'sums unordered dates and selects the most recent tied day: %s',
+  (order) => {
+    const contributionDays = [
+      { date: '2026-01-02', count: 3 },
+      { date: '2025-12-30', count: 100 },
+      { date: '2026-01-03', count: 200 },
+      { date: '2025-12-31', count: 3 },
+      { date: '2026-01-01', count: 0 },
+    ];
+    const result = calculateActivityMetrics(
+      {
+        user: 'Octocat',
+        contributionDays:
+          order === 'newest first'
+            ? contributionDays
+            : contributionDays.reverse(),
+      },
+      period,
+    );
+    expect(result).toEqual({
       user: 'Octocat',
-      contributionDays: [
-        { date: '2026-01-02', count: 3 },
-        { date: '2025-12-30', count: 100 },
-        { date: '2026-01-03', count: 200 },
-        { date: '2025-12-31', count: 3 },
-        { date: '2026-01-01', count: 0 },
-      ],
-    },
-    period,
-  );
-  expect(result).toEqual({
-    user: 'Octocat',
-    days: 3,
-    startDate: '2025-12-31',
-    endDate: '2026-01-02',
-    totalContributions: 6,
-    activeDays: 2,
-    busiestDay: { date: '2026-01-02', count: 3 },
-  });
-  expect(JSON.parse(JSON.stringify(result))).toEqual(result);
-});
+      days: 3,
+      startDate: '2025-12-31',
+      endDate: '2026-01-02',
+      totalContributions: 6,
+      activeDays: 2,
+      busiestDay: { date: '2026-01-02', count: 3 },
+    });
+    expect(JSON.parse(JSON.stringify(result))).toEqual(result);
+  },
+);
 it.each([
   { contributionDays: [] },
   { contributionDays: [{ date: '2026-01-01', count: 0 }] },

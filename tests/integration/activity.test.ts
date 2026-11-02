@@ -50,35 +50,43 @@ function setup(body: unknown = { data: calendar() }) {
   const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
   return { fetch, loader, stdout, stderr };
 }
-it('runs GraphQL through the default30-day UTC table with exact metric values', async () => {
-  const { loader, fetch, stdout, stderr } = setup();
-  await runCli(
-    ['node', 'gitmetrics', 'activity', 'octocat', '--no-color'],
-    undefined,
-    loader,
-  );
-  const output = stdout.mock.calls.flat().join('');
-  const rows = output
-    .split('\n')
-    .filter((line) => line.startsWith('│'))
-    .map((line) =>
-      line
-        .split('│')
-        .slice(1, -1)
-        .map((cell) => cell.trim()),
+it.each([
+  { order: 'newest first', contributionDays: days },
+  { order: 'oldest first', contributionDays: [...days].reverse() },
+])(
+  'runs GraphQL through the default30-day table with ties in either order: $order',
+  async ({ contributionDays }) => {
+    const { loader, fetch, stdout, stderr } = setup({
+      data: calendar(contributionDays),
+    });
+    await runCli(
+      ['node', 'gitmetrics', 'activity', 'octocat', '--no-color'],
+      undefined,
+      loader,
     );
-  expect(rows).toEqual([
-    ['Metric', 'Octocat'],
-    ['Days', '30'],
-    ['Period (UTC)', '2025-12-04 to 2026-01-02'],
-    ['Total contributions', '8'],
-    ['Active days', '3'],
-    ['Busiest day', '2026-01-02 (3 contributions)'],
-  ]);
-  expect(output).not.toContain('\u001b');
-  expect(fetch).toHaveBeenCalledTimes(1);
-  expect(stderr).not.toHaveBeenCalled();
-});
+    const output = stdout.mock.calls.flat().join('');
+    const rows = output
+      .split('\n')
+      .filter((line) => line.startsWith('│'))
+      .map((line) =>
+        line
+          .split('│')
+          .slice(1, -1)
+          .map((cell) => cell.trim()),
+      );
+    expect(rows).toEqual([
+      ['Metric', 'Octocat'],
+      ['Days', '30'],
+      ['Period (UTC)', '2025-12-04 to 2026-01-02'],
+      ['Total contributions', '8'],
+      ['Active days', '3'],
+      ['Busiest day', '2026-01-02 (3 contributions)'],
+    ]);
+    expect(output).not.toContain('\u001b');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(stderr).not.toHaveBeenCalled();
+  },
+);
 it.each([
   ['--json', 'activity', 'octocat', '--days', '3'],
   ['activity', 'octocat', '--days', '3', '--json'],
