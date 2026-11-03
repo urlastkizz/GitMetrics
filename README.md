@@ -19,13 +19,13 @@ The following registry installation commands will be available after the package
 is published to npm. Run a repository query without cloning this project:
 
 ```sh
-npx gitmetrics repo octocat/Hello-World --json
+npx @urlastkizz/gitmetrics repo octocat/Hello-World --json
 ```
 
 Or install the CLI globally:
 
 ```sh
-npm install -g gitmetrics
+npm install -g @urlastkizz/gitmetrics
 gitmetrics repo octocat/Hello-World
 ```
 
@@ -129,7 +129,7 @@ A missing activity token produces setup commands and a link to this section befo
 
 ## Usage
 
-After installing globally, use `gitmetrics`. The examples below use `node dist/index.js` for a local build; replace it with `gitmetrics` when using the installed CLI. To run the TypeScript source, use `npm start --`; for example, `npm start -- repo octocat/Hello-World --json` forwards the arguments after `--` to the CLI. The package and executable are named `gitmetrics`.
+After installing globally, use `gitmetrics`. The examples below use `node dist/index.js` for a local build; replace it with `gitmetrics` when using the installed CLI. To run the TypeScript source, use `npm start --`; for example, `npm start -- repo octocat/Hello-World --json` forwards the arguments after `--` to the CLI. The npm package is named `@urlastkizz/gitmetrics`; the executable is named `gitmetrics`.
 
 ### Profile (default command)
 

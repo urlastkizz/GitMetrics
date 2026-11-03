@@ -59,8 +59,9 @@ if (stage === ${JSON.stringify(failingStage ?? '')}) process.exit(1);
 describe('npm package contract', () => {
   it('defines the public package metadata and distributable allowlist', () => {
     expect(manifest).toMatchObject({
-      name: 'gitmetrics',
-      version: expect.stringMatching(/^\d+\.\d+\.\d+$/),
+      name: '@urlastkizz/gitmetrics',
+      version: '0.1.0',
+      publishConfig: { access: 'public' },
       description: expect.any(String),
       keywords: expect.arrayContaining(['github', 'cli']),
       license: 'MIT',

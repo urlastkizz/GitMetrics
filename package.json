@@ -1,6 +1,9 @@
 {
-  "name": "gitmetrics",
+  "name": "@urlastkizz/gitmetrics",
   "version": "0.1.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "GitHub profile and repository metrics in the terminal",
   "main": "./dist/index.js",
   "scripts": {

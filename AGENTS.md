@@ -114,7 +114,7 @@ Uma tarefa só está pronta quando:
 
 **Fase 4 — Polimento (o que destaca no currículo)**
 - README forte: GIF/demo do terminal, instalação, exemplos, badges (CI, versão, licença)
-- Publicar no npm (`npx gitmetrics`)
+- Publicar no npm (`npx @urlastkizz/gitmetrics`)
 - Releases automáticas e CHANGELOG
 - Issues/Milestones organizados no GitHub
 - `docs/ARCHITECTURE.md` explicando decisões
