@@ -2,7 +2,7 @@
 
 Size: M (issue label). Branch: `chore/9-prepare-npm-package`.
 Base: `460711c8255a051b0853681f543e30753a2c067d`.
-Status: awaiting author approval before implementation.
+Status: approved by the author on 2026-11-03.
 
 ## Goal and scope
 
