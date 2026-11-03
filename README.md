@@ -1,205 +1,169 @@
 # GitMetrics
 
-A TypeScript CLI for exploring public GitHub profiles and their five newest repositories from the terminal, with colored cards, tables, and JSON output.
+[![CI](https://github.com/urlastkizz/GitMetrics/actions/workflows/ci.yml/badge.svg)](https://github.com/urlastkizz/GitMetrics/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Built to practice TypeScript, asynchronous API requests, automated testing, and collaboration through Git branches and pull requests.
+GitMetrics is a TypeScript CLI for exploring GitHub from your terminal: `profile` shows a user's public profile and five newest repositories, `repo` summarizes a public repository, and `activity` measures recent user contributions. The profile lookup is the default command, invoked as `gitmetrics <username>`; there is no literal `profile` subcommand.
 
-## Features
-
-- Profile card with name, bio, followers, and public repository count.
-- Up to five public repositories, ordered from newest to oldest by **creation date**.
-- Repository name, primary language, stars, forks, and link.
-- Terminal tables with colors and numbers formatted for English.
-- JSON output for scripts, plus help and version options.
-- Recent user contribution totals, active days, and busiest day using the GitHub contribution calendar.
-- Messages for missing profile fields, empty repository lists, and failed requests.
+Built to practice TypeScript, API integration, pure metric calculations, automated testing, and collaboration through Git branches and pull requests.
 
 ## Requirements
 
-- Node.js 22.13 or newer and npm. CI checks Node.js 22, 24, and 26.
-- Git to clone the repository.
-- Internet access to query the public GitHub API.
+- **Node.js >=22.13.0**, matching `package.json`, and npm.
+- Git to clone the repository, plus internet access to query GitHub.
+- A GitHub token for `activity`. Profile queries and public repository queries can run without one.
 
-## Installation
+## Quick start
+
+Clone the project, install its locked dependencies, build, and query a public repository:
 
 ```sh
 git clone https://github.com/urlastkizz/GitMetrics.git
 cd GitMetrics
 npm ci
+npm run build
+node dist/index.js repo octocat/Hello-World --json
 ```
 
-The product is named GitMetrics; the npm package and executable are named `gitmetrics`.
+Expected output shape, shown here as an actual response captured on **2026-11-03**:
+
+```json
+{
+  "repository": "octocat/Hello-World",
+  "stars": 3897,
+  "forks": 7356,
+  "openIssues": 6151,
+  "openPullRequests": 1369,
+  "languages": [],
+  "lastCommitAt": "2012-03-06T23:06:50.000Z"
+}
+```
+
+All data examples below were also captured from this version against public GitHub data on that date. Counts and activity dates change when you run the commands again.
 
 ## Usage
 
-Pass a GitHub username without `@` or a profile URL:
+Use `node dist/index.js` after building, or `npm start --` to run the TypeScript source. For example, `npm start -- repo octocat/Hello-World --json` forwards the arguments after `--` to the CLI. The package and executable are named `gitmetrics`.
+
+### Profile (default command)
+
+Show a public profile and up to five repositories, ordered by creation date from newest to oldest:
 
 ```sh
-npm start -- octocat
-npm start -- octocat --json
-npm start -- --help
-npm start -- --version
-```
-
-Replace `octocat` with the user you want to query. The `--` separator forwards the following arguments to the CLI.
-
-To run the compiled executable:
-
-```sh
-npm run build
+node dist/index.js <username> [--json]
 node dist/index.js octocat
 node dist/index.js octocat --json
 ```
 
-The executable also accepts `--help` and `--version`. When installed as a package, use `gitmetrics`.
+Pass a username without `@` or a profile URL. Options:
+
+| Flag            | Purpose                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `--json`        | Print one JSON object containing `profile` and `repositories`, using GitHub API response fields. |
+| `-h, --help`    | Show CLI help.                                                                                   |
+| `-V, --version` | Show the installed version.                                                                      |
+
+Actual output excerpt from `node dist/index.js octocat` (the repository table follows the card):
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ GITHUB PROFILE · @octocat                                                                        │
+├────────────────────────┬─────────────────────────────────────────────────────────────────────────┤
+│ Name                   │ The Octocat                                                             │
+├────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Bio                    │ Not provided                                                            │
+├────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Followers              │ 24,905                                                                  │
+├────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Public repositories    │ 8                                                                       │
+└────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
+```
+
+The repository table includes name, primary language, stars, forks, and link. Terminal output supports colors and adapts column widths. Profile queries are anonymous and do not read `GITHUB_TOKEN`.
 
 ### Repository metrics
 
 ```sh
-gitmetrics repo octocat/Hello-World
-gitmetrics repo octocat/Hello-World --json
-gitmetrics repo octocat/Hello-World --no-color
-npm start -- repo octocat/Hello-World
+node dist/index.js repo <owner/name> [--json] [--no-color] [--token <token>]
+node dist/index.js repo octocat/Hello-World
 node dist/index.js repo octocat/Hello-World --json
 ```
 
-The table shows stars, forks, open issues (excluding pull requests), open PRs, language percentages, and the last commit date. For example, fictional values:
+| Flag              | Purpose                                              |
+| ----------------- | ---------------------------------------------------- |
+| `--json`          | Print repository metrics as one JSON object.         |
+| `--no-color`      | Disable colors in the default table output.          |
+| `--token <token>` | Override `GITHUB_TOKEN`; authentication is optional. |
+| `-h, --help`      | Show command help.                                   |
 
-```text
-Metric              owner/name
-Stars               12
-Forks               2
-Open issues         3
-Open PRs            1
-Languages           TypeScript: 75.00%
-                    JavaScript: 25.00%
-Last commit (UTC)   2026-01-02T03:04:05.000Z
-```
-
-`--json` prints only a JSON object and a newline, with the same metrics:
+Actual output from `node dist/index.js repo octocat/Hello-World --json`:
 
 ```json
 {
-  "repository": "owner/name",
-  "stars": 12,
-  "forks": 2,
-  "openIssues": 3,
-  "openPullRequests": 1,
-  "languages": [
-    { "name": "TypeScript", "percentage": 75 },
-    { "name": "JavaScript", "percentage": 25 }
-  ],
-  "lastCommitAt": "2026-01-02T03:04:05.000Z"
+  "repository": "octocat/Hello-World",
+  "stars": 3897,
+  "forks": 7356,
+  "openIssues": 6151,
+  "openPullRequests": 1369,
+  "languages": [],
+  "lastCommitAt": "2012-03-06T23:06:50.000Z"
 }
 ```
 
-Language percentages are bytes divided by total bytes, rounded independently to two decimals; their sum can differ slightly from 100. Languages are sorted by descending bytes, then name. An empty language response produces `[]` in JSON and `No languages` in the table.
+The default table shows the same metrics. Open issues exclude pull requests; all open PR pages are counted. Language percentages use bytes divided by total bytes, rounded independently to two decimals, and are sorted by descending bytes, then name. Their sum can differ slightly from 100. An empty language list appears as `[]` in JSON or `No languages` in the table.
 
-The last commit is the first commit returned for the default branch, using its committer date normalized to UTC. An empty repository produces `lastCommitAt: null` and `No commits` in the table. All open PR pages are counted before subtracting PRs from GitHub's combined issue count; inconsistent counts produce a retry message.
-
-Repository queries use `--token <token>` before `GITHUB_TOKEN`, or anonymous access when neither is set. Tokens are optional and never printed. Requests have a 15-second timeout without automatic retries. Rate-limit errors report the UTC reset time when GitHub supplies it. Invalid usage exits with `2`; failed queries exit with `1` on stderr and leave stdout empty. Successful queries exit with `0`. Private repositories and caching are outside this command's scope.
+The last commit date comes from the default branch's latest commit, normalized to UTC. An empty repository uses `lastCommitAt: null` or `No commits`. Private repositories and caching are outside this command's scope.
 
 ### User activity
 
 ```sh
-gitmetrics activity octocat
-gitmetrics activity octocat --days 7 --json
-gitmetrics activity octocat --days 365 --no-color
-npm start -- activity octocat --days 7
+node dist/index.js activity <user> [--days <n>] [--json] [--no-color] [--token <token>]
+node dist/index.js activity octocat
 node dist/index.js activity octocat --days 7 --json
 ```
 
-Activity requires a GitHub token. Set `GITHUB_TOKEN` in your environment or use `--token <token>`; the explicit option takes precedence. Missing or blank tokens produce guidance on stderr and exit `1`. Invalid usernames or `--days` values exit `2` before authentication or API access.
+Activity requires a GitHub token available through `GITHUB_TOKEN` or the explicit token option. The explicit option takes precedence. Keep credentials out of screenshots, shared output, and committed files.
 
-The default period is the last 30 UTC calendar days, including today. `--days` accepts decimal integers from 1 through 365. The start is UTC midnight on the first day; the end is one captured current instant. Today's contributions are therefore partial. The same period is used for the GraphQL query, calculations, and output, including across year boundaries and leap days.
+| Flag              | Purpose                                                         |
+| ----------------- | --------------------------------------------------------------- |
+| `--days <n>`      | Select 1–365 UTC calendar days, including today; default: `30`. |
+| `--json`          | Print activity metrics as one JSON object.                      |
+| `--no-color`      | Disable colors in the default table output.                     |
+| `--token <token>` | Override `GITHUB_TOKEN`; authentication is required.            |
+| `-h, --help`      | Show command help.                                              |
 
-The command uses GitHub GraphQL `contributionsCollection` calendar days, rather than repository commit counts or annual totals. Counts reflect the contributions GitHub exposes for the user and token. Total contributions are the sum of the daily counts in the requested period; active days have at least one contribution. The busiest day is the date with the highest count; ties select the most recent date. Calendar padding outside the requested dates is excluded.
-
-Illustrative table values:
-
-```text
-Metric                octocat
-Days                  2
-Period (UTC)          2026-01-01 to 2026-01-02
-Total contributions   3
-Active days           1
-Busiest day           2026-01-02 (3 contributions)
-```
-
-`--json` prints exactly one JSON object and a newline, with the canonical GitHub login:
+Actual output from `node dist/index.js activity octocat --days 7 --json`, with authentication already available:
 
 ```json
 {
   "user": "octocat",
-  "days": 2,
-  "startDate": "2026-01-01",
-  "endDate": "2026-01-02",
-  "totalContributions": 3,
-  "activeDays": 1,
-  "busiestDay": { "date": "2026-01-02", "count": 3 }
+  "days": 7,
+  "startDate": "2026-10-28",
+  "endDate": "2026-11-03",
+  "totalContributions": 0,
+  "activeDays": 0,
+  "busiestDay": null
 }
 ```
 
-A period without contributions keeps its requested dates, returns both totals as `0`, and uses `busiestDay: null` in JSON or `No contributions` in the table. Missing users, invalid credentials, permissions, rate limits, and service/network failures exit `1` with safe stderr messages and no stdout. Partial GraphQL responses with errors are rejected. Requests share the repository client's effective 15-second deadline and do not retry automatically. Successful queries exit `0`. Streaks, charts, contribution breakdowns, and caching are outside this command's scope.
+The command uses GitHub's GraphQL contribution calendar. It counts contributions exposed for the queried user and token, rather than repository commits. The period starts at UTC midnight on the first day and ends at the query's captured current instant; today's count is partial.
 
-### Example output
+Active days have at least one contribution. The busiest day has the highest daily count, with ties resolved to the most recent date. A period without contributions returns both totals as `0` and `busiestDay: null` (or `No contributions` in the table). Streaks, charts, contribution breakdowns, and caching are outside this command's scope.
 
-Illustrative output with fictional values. Terminal output also includes colors; column widths adapt to the terminal. Table labels and query errors are in English.
+### Help and errors
 
-```text
-┌────────────────────────┬───────────────────────────┐
-│ GITHUB PROFILE · @example                          │
-├────────────────────────┼───────────────────────────┤
-│ Name                   │ Example Person            │
-│ Bio                    │ Learning TypeScript       │
-│ Followers              │ 120                       │
-│ Public repositories    │ 1                         │
-└────────────────────────┴───────────────────────────┘
-
-LATEST REPOSITORIES · by creation date
-┌────────────┬────────────┬──────────┬───────┬────────────────────────────────────────────┐
-│ Name       │ Primary    │ Stars    │ Forks │ Link                                       │
-│            │ language   │          │       │                                            │
-├────────────┼────────────┼──────────┼───────┼────────────────────────────────────────────┤
-│ GitMetrics │ TypeScript │       12 │     2 │ https://github.com/example/GitMetrics       │
-└────────────┴────────────┴──────────┴───────┴────────────────────────────────────────────┘
+```sh
+node dist/index.js --help
+node dist/index.js repo --help
+node dist/index.js activity --help
+node dist/index.js --version
 ```
 
-### JSON output
+Successful queries, help, and version exit with `0`; failed queries exit with `1`; invalid CLI usage exits with `2`. Query errors go to stderr, leaving stdout empty. Requests use a 15-second timeout without automatic retries.
 
-`--json` returns an object containing `profile` and `repositories`, using the original GitHub API response fields. The repository list is still limited to five entries.
-
-## How it works
-
-Commander parses the username and options. The CLI then sends two requests in parallel:
-
-```text
-GET https://api.github.com/users/{username}
-GET https://api.github.com/users/{username}/repos?type=owner&sort=created&direction=desc&per_page=5
-```
-
-Each request has a 15-second timeout. Missing usernames and invalid options exit with code `2`; failed queries exit with code `1`. Successful queries, help, and version output exit with code `0`.
-
-Profile requests use public data without authentication. Profile queries do not read `GITHUB_TOKEN`; their rate-limit and network failures use the general query error message. Repository queries use the separate authenticated or anonymous client described above.
+Repository and activity queries report invalid credentials, rate limits, missing resources, and network failures with useful error messages. Rate-limit errors include the UTC reset time when GitHub supplies it. Profile queries use a general query error message. Activity rejects partial GraphQL responses with errors and reports missing authentication before making a request.
 
 ## Development
-
-```text
-src/
-  index.ts          # Executable entry point
-  cli/              # Argument parsing and current profile implementation
-  core/             # Pure repository metric calculations and project types
-  github/           # Octokit client, validation, pagination, and errors
-  output/           # Repository table and JSON formatting
-  config/           # Optional token resolution
-  utils/            # Reserved for shared helpers
-tests/
-  integration/      # CLI smoke tests and mocked GitHub queries
-  unit/             # Core, client, formatter, configuration, and command tests
-.github/workflows/  # CI checks
-```
-
-The current profile module still contains API access and presentation. Future extraction will separate those responsibilities as metrics are added.
 
 ```sh
 npm run typecheck
@@ -210,17 +174,25 @@ npm run test:coverage
 npm run build
 ```
 
-Tests run without network access. To try a real query, use `npm start -- octocat`; to rerun automatically while editing, use `npm run dev -- octocat`.
+Tests use mocked GitHub responses and run without network access. GitHub Actions checks Node.js 22, 24, and 26.
 
-The stack includes TypeScript in strict mode, Node.js with native `fetch`, Commander, picocolors, cli-table3, tsx, ESLint, Prettier, Vitest, and tsup. GitHub Actions runs the checks on pushes and pull requests.
+```text
+src/
+  index.ts          # Executable entry point
+  cli/              # Commander commands and current profile implementation
+  core/             # Pure metric calculations and project types
+  github/           # API clients, validation, pagination, and errors
+  output/           # Repository and activity table/JSON formatters
+  config/           # Token resolution
+  utils/            # Reserved for shared helpers
+tests/
+  integration/      # CLI smoke tests and mocked GitHub queries
+  unit/             # Metrics, clients, formatters, configuration, and commands
+```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch, commit, and verification workflow.
+Repository and activity commands separate parsing, metric calculation, API access, and presentation. The current profile module still combines API access and output; extracting those responsibilities is future work.
 
-## Next steps
-
-- Aggregate stars, forks, and languages across paginated repositories.
-- Separate API access, metric calculations, and output formatting.
-- Expand tests as metrics and error handling are added.
+The stack includes TypeScript in strict mode, Node.js, Commander, Octokit, Zod, picocolors, cli-table3, Vitest, and tsup. See [CONTRIBUTING.md](CONTRIBUTING.md) for the existing contribution workflow.
 
 ## License
 
