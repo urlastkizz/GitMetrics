@@ -1,6 +1,6 @@
 {
   "name": "gitmetrics",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "GitHub profile and repository metrics in the terminal",
   "main": "./dist/index.js",
   "scripts": {
