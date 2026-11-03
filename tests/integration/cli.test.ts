@@ -15,8 +15,8 @@ function runCli(...args: string[]) {
 }
 
 describe('CLI', () => {
-  it('uses a single package and executable name', () => {
-    expect(name).toBe('gitmetrics');
+  it('uses a scoped package name and keeps the gitmetrics executable', () => {
+    expect(name).toBe('@urlastkizz/gitmetrics');
     expect(bin).toEqual({ gitmetrics: './dist/index.js' });
   });
 

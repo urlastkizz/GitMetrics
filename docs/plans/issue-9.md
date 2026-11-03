@@ -6,13 +6,13 @@ Status: approved by the author on 2026-11-03.
 
 ## Goal and scope
 
-Enable installation with `npx gitmetrics repo owner/name` and a global npm
+Enable installation with `npx @urlastkizz/gitmetrics repo owner/name` and a global npm
 installation without cloning this repository. Prepare the package without
 publishing it. The executable command remains `gitmetrics`.
 
-`npm view gitmetrics name version --json` returned exit code 1 with an E404
-response from `https://registry.npmjs.org/gitmetrics`, so the final package name
-is `gitmetrics`, following the issue's naming rule.
+The package name is `@urlastkizz/gitmetrics`, with `publishConfig.access` set to
+`public`. This scoped name supersedes the original unscoped name chosen during
+issue #9; the executable command remains `gitmetrics`.
 
 ## Subtask 1: Complete the npm package contract
 
@@ -22,7 +22,7 @@ is `gitmetrics`, following the issue's naming rule.
 - Include all required metadata: name, version, description, keywords, license,
   repository, bugs, homepage, bin, engines, and the exact files allowlist
   `["dist", "README.md", "LICENSE"]`.
-- Keep version `1.0.0`, MIT licensing, and Node `>=22.13.0`.
+- Keep version `0.1.0`, MIT licensing, and Node `>=22.13.0`.
 - Set `prepublishOnly` to
   `npm run typecheck && npm run lint && npm test && npm run build`.
 - Test `defines the public package metadata and distributable allowlist`.
@@ -60,8 +60,8 @@ is `gitmetrics`, following the issue's naming rule.
 - Files: update `README.md`.
 - Depends on subtask 1.
 - Add an Installation section showing
-  `npx gitmetrics repo octocat/Hello-World --json`,
-  `npm install -g gitmetrics`, and
+  `npx @urlastkizz/gitmetrics repo octocat/Hello-World --json`,
+  `npm install -g @urlastkizz/gitmetrics`, and
   `gitmetrics repo octocat/Hello-World`.
 - Review the examples against the final package name.
 - Clarify that registry installation becomes available after manual publication.
