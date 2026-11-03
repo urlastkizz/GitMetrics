@@ -10,12 +10,29 @@ Built to practice TypeScript, API integration, pure metric calculations, automat
 ## Requirements
 
 - **Node.js >=22.13.0**, matching `package.json`, and npm.
-- Git to clone the repository, plus internet access to query GitHub.
+- Internet access to install the package and query GitHub.
 - A GitHub token for `activity`. Profile queries and public repository queries can run without one.
 
-## Quick start
+## Installation
 
-Clone the project, install its locked dependencies, build, and query a public repository:
+The following registry installation commands will be available after the package
+is published to npm. Run a repository query without cloning this project:
+
+```sh
+npx gitmetrics repo octocat/Hello-World --json
+```
+
+Or install the CLI globally:
+
+```sh
+npm install -g gitmetrics
+gitmetrics repo octocat/Hello-World
+```
+
+### Run from source
+
+For local development, Git is also required. Clone the project, install its
+locked dependencies, build, and query a public repository:
 
 ```sh
 git clone https://github.com/urlastkizz/GitMetrics.git
@@ -112,7 +129,7 @@ A missing activity token produces setup commands and a link to this section befo
 
 ## Usage
 
-Use `node dist/index.js` after building, or `npm start --` to run the TypeScript source. For example, `npm start -- repo octocat/Hello-World --json` forwards the arguments after `--` to the CLI. The package and executable are named `gitmetrics`.
+After installing globally, use `gitmetrics`. The examples below use `node dist/index.js` for a local build; replace it with `gitmetrics` when using the installed CLI. To run the TypeScript source, use `npm start --`; for example, `npm start -- repo octocat/Hello-World --json` forwards the arguments after `--` to the CLI. The package and executable are named `gitmetrics`.
 
 ### Profile (default command)
 

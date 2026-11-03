@@ -12,11 +12,25 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build"
   },
-  "keywords": [],
+  "keywords": [
+    "github",
+    "cli",
+    "metrics",
+    "typescript"
+  ],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/urlastkizz/GitMetrics.git"
+  },
+  "bugs": {
+    "url": "https://github.com/urlastkizz/GitMetrics/issues"
+  },
+  "homepage": "https://github.com/urlastkizz/GitMetrics#readme",
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -41,7 +55,9 @@
     "gitmetrics": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=22.13.0"
