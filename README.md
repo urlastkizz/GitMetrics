@@ -1,11 +1,51 @@
 # GitMetrics
 
-[![CI](https://github.com/urlastkizz/GitMetrics/actions/workflows/ci.yml/badge.svg)](https://github.com/urlastkizz/GitMetrics/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@urlastkizz/gitmetrics)](https://www.npmjs.com/package/@urlastkizz/gitmetrics)
+[![CI](https://github.com/urlastkizz/GitMetrics/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/urlastkizz/GitMetrics/actions/workflows/ci.yml?query=branch%3Amain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 GitMetrics is a TypeScript CLI for exploring GitHub from your terminal: `profile` shows a user's public profile and five newest repositories, `repo` summarizes a public repository, and `activity` measures recent user contributions. The profile lookup is the default command, invoked as `gitmetrics <username>`; there is no literal `profile` subcommand.
 
 Built to practice TypeScript, API integration, pure metric calculations, automated testing, and collaboration through Git branches and pull requests.
+
+[Authentication](#authentication): only `activity` requires a GitHub token; profile and public repository queries can run anonymously.
+
+[Quick start](#quick-start) · [Installation](#installation) · [Usage](#usage) · [Authentication](#authentication) · [Development](#development)
+
+## Quick start
+
+Run a public repository query without cloning, building, or installing globally:
+
+```sh
+npx @urlastkizz/gitmetrics repo microsoft/vscode
+```
+
+Expected output, captured from the published **0.1.1** package on **2026-11-03** (terminal colors omitted):
+
+```text
+┌───────────────────┬──────────────────────────┐
+│ Metric            │ microsoft/vscode         │
+├───────────────────┼──────────────────────────┤
+│ Stars             │ 194526                   │
+├───────────────────┼──────────────────────────┤
+│ Forks             │ 44393                    │
+├───────────────────┼──────────────────────────┤
+│ Open issues       │ 18978                    │
+├───────────────────┼──────────────────────────┤
+│ Open PRs          │ 3090                     │
+├───────────────────┼──────────────────────────┤
+│ Languages         │ TypeScript: 96.48%       │
+│                   │ CSS: 1.44%               │
+│                   │ Rust: 0.70%              │
+│                   │ JavaScript: 0.51%        │
+│                   │ HTML: 0.31%              │
+│                   │ Other: 0.56%             │
+├───────────────────┼──────────────────────────┤
+│ Last commit (UTC) │ 2026-11-03T08:45:50.000Z │
+└───────────────────┴──────────────────────────┘
+```
+
+All data examples below were also captured from the published **0.1.1** package against public GitHub data on that date. Counts and activity dates change when you run the commands again. Queries paginate GitHub results, so large repositories can take longer; anonymous requests may reach GitHub's rate limit. See [Authentication](#authentication) to use a token.
 
 ## Requirements
 
@@ -15,8 +55,7 @@ Built to practice TypeScript, API integration, pure metric calculations, automat
 
 ## Installation
 
-The following registry installation commands will be available after the package
-is published to npm. Run a repository query without cloning this project:
+Use `npx` to run the published package without installing globally:
 
 ```sh
 npx @urlastkizz/gitmetrics repo octocat/Hello-World --json
@@ -41,22 +80,6 @@ npm ci
 npm run build
 node dist/index.js repo octocat/Hello-World --json
 ```
-
-Expected output shape, shown here as an actual response captured on **2026-11-03**:
-
-```json
-{
-  "repository": "octocat/Hello-World",
-  "stars": 3897,
-  "forks": 7356,
-  "openIssues": 6151,
-  "openPullRequests": 1369,
-  "languages": [],
-  "lastCommitAt": "2012-03-06T23:06:50.000Z"
-}
-```
-
-All data examples below were also captured from this version against public GitHub data on that date. Counts and activity dates change when you run the commands again.
 
 ## Authentication
 
@@ -119,7 +142,7 @@ printf '\n%s\n' "export GITHUB_TOKEN='YOUR_TOKEN'" >> "${ZDOTDIR:-$HOME}/.zshrc"
 source "${ZDOTDIR:-$HOME}/.zshrc"
 ```
 
-Run the permanent setup once; edit the existing entry when replacing a token. Bash login shells read the first available `~/.bash_profile`, `~/.bash_login`, or `~/.profile` instead of `~/.bashrc`. Ensure that login file sources `~/.bashrc`, or put the export in that login file. PowerShell on macOS/Linux can put its session assignment in `$PROFILE` instead of using Windows user environment settings. See the [Bash startup rules](https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html) and [zsh startup rules](https://zsh.sourceforge.io/Doc/Release/Files.html).
+Run the permanent setup once; edit the existing entry when replacing a token. Bash login shells read the first available `~/.bash_profile`, `~/.bash_login`, or `~/.profile` instead of `~/.bashrc`. Ensure that login file sources `~/.bashrc`, or put the export in that login file. PowerShell on macOS/Linux can put its session assignment in `$PROFILE` instead of using Windows user environment settings. See the [Bash startup rules](https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html) and [zsh startup rules](https://github.com/zsh-users/zsh/blob/master/Doc/Zsh/files.yo).
 
 ### Keep tokens private
 
@@ -129,16 +152,16 @@ A missing activity token produces setup commands and a link to this section befo
 
 ## Usage
 
-After installing globally, use `gitmetrics`. The examples below use `node dist/index.js` for a local build; replace it with `gitmetrics` when using the installed CLI. To run the TypeScript source, use `npm start --`; for example, `npm start -- repo octocat/Hello-World --json` forwards the arguments after `--` to the CLI. The npm package is named `@urlastkizz/gitmetrics`; the executable is named `gitmetrics`.
+After installing globally, use `gitmetrics` as shown below. Without a global install, replace `gitmetrics` with `npx @urlastkizz/gitmetrics`. For a local build, use `node dist/index.js`. To run the TypeScript source, use `npm start --`; for example, `npm start -- repo octocat/Hello-World --json` forwards the arguments after `--` to the CLI. The npm package is named `@urlastkizz/gitmetrics`; the executable is named `gitmetrics`.
 
 ### Profile (default command)
 
 Show a public profile and up to five repositories, ordered by creation date from newest to oldest:
 
 ```sh
-node dist/index.js <username> [--json]
-node dist/index.js octocat
-node dist/index.js octocat --json
+gitmetrics <username> [--json]
+gitmetrics octocat
+gitmetrics octocat --json
 ```
 
 Pass a username without `@` or a profile URL. Options:
@@ -149,7 +172,7 @@ Pass a username without `@` or a profile URL. Options:
 | `-h, --help`    | Show CLI help.                                                                                   |
 | `-V, --version` | Show the installed version.                                                                      |
 
-Actual output excerpt from `node dist/index.js octocat` (the repository table follows the card):
+Actual output excerpt from `gitmetrics octocat` (the repository table follows the card):
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -159,7 +182,7 @@ Actual output excerpt from `node dist/index.js octocat` (the repository table fo
 ├────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
 │ Bio                    │ Not provided                                                            │
 ├────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
-│ Followers              │ 24,905                                                                  │
+│ Followers              │ 24,910                                                                  │
 ├────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
 │ Public repositories    │ 8                                                                       │
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
@@ -170,10 +193,10 @@ The repository table includes name, primary language, stars, forks, and link. Te
 ### Repository metrics
 
 ```sh
-node dist/index.js repo <owner/name> [--languages <n>] [--json] [--no-color] [--token <token>]
-node dist/index.js repo octocat/Hello-World
-node dist/index.js repo octocat/Hello-World --json
-node dist/index.js repo microsoft/TypeScript --languages 1 --no-color
+gitmetrics repo <owner/name> [--languages <n>] [--json] [--no-color] [--token <token>]
+gitmetrics repo octocat/Hello-World
+gitmetrics repo octocat/Hello-World --json
+gitmetrics repo microsoft/TypeScript --languages 1 --no-color
 ```
 
 | Flag              | Purpose                                              |
@@ -184,13 +207,13 @@ node dist/index.js repo microsoft/TypeScript --languages 1 --no-color
 | `--token <token>` | Override `GITHUB_TOKEN`; authentication is optional. |
 | `-h, --help`      | Show command help.                                   |
 
-Actual output from `node dist/index.js repo octocat/Hello-World --json`:
+Actual output from `gitmetrics repo octocat/Hello-World --json`:
 
 ```json
 {
   "repository": "octocat/Hello-World",
   "stars": 3897,
-  "forks": 7356,
+  "forks": 7358,
   "openIssues": 6151,
   "openPullRequests": 1369,
   "languages": [],
@@ -207,9 +230,9 @@ The last commit date comes from the default branch's latest commit, normalized t
 ### User activity
 
 ```sh
-node dist/index.js activity <user> [--days <n>] [--json] [--no-color] [--token <token>]
-node dist/index.js activity octocat
-node dist/index.js activity octocat --days 7 --json
+gitmetrics activity <user> [--days <n>] [--json] [--no-color] [--token <token>]
+gitmetrics activity octocat
+gitmetrics activity octocat --days 7 --json
 ```
 
 Activity requires a GitHub token available through `GITHUB_TOKEN` or the explicit token option. The explicit option takes precedence. Keep credentials out of screenshots, shared output, and committed files.
@@ -222,7 +245,7 @@ Activity requires a GitHub token available through `GITHUB_TOKEN` or the explici
 | `--token <token>` | Override `GITHUB_TOKEN`; authentication is required.            |
 | `-h, --help`      | Show command help.                                              |
 
-Actual output from `node dist/index.js activity octocat --days 7 --json`, with authentication already available:
+Actual output from `gitmetrics activity octocat --days 7 --json`, with authentication already available:
 
 ```json
 {
@@ -243,10 +266,10 @@ Active days have at least one contribution. The busiest day has the highest dail
 ### Help and errors
 
 ```sh
-node dist/index.js --help
-node dist/index.js repo --help
-node dist/index.js activity --help
-node dist/index.js --version
+gitmetrics --help
+gitmetrics repo --help
+gitmetrics activity --help
+gitmetrics --version
 ```
 
 Successful queries, help, and version exit with `0`; failed queries exit with `1`; invalid CLI usage exits with `2`. Query errors go to stderr, leaving stdout empty. Requests use a 15-second timeout without automatic retries.
