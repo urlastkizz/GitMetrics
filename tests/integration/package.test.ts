@@ -60,7 +60,6 @@ describe('npm package contract', () => {
   it('defines the public package metadata and distributable allowlist', () => {
     expect(manifest).toMatchObject({
       name: '@urlastkizz/gitmetrics',
-      version: '0.1.0',
       publishConfig: { access: 'public' },
       description: expect.any(String),
       keywords: expect.arrayContaining(['github', 'cli']),
@@ -116,11 +115,13 @@ describe('npm production artifact', () => {
     const packages = z
       .array(
         z.object({
+          version: z.string(),
           files: z.array(z.object({ path: z.string() })),
         }),
       )
       .parse(JSON.parse(result.stdout));
     expect(packages).toHaveLength(1);
+    expect(packages[0]?.version).toBe(manifest.version);
     const paths = packages.flatMap((packed) =>
       packed.files.map((file) => file.path),
     );
