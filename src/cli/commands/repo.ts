@@ -6,6 +6,11 @@ import type { RepositoryLoader } from '../../core/types.js';
 import { formatRepository } from '../../output/repo.js';
 
 const repositoryArgument = z.string().regex(/^[\w.-]+\/[\w.-]+$/);
+const languagesSchema = z
+  .string()
+  .regex(/^\d+$/)
+  .transform(Number)
+  .pipe(z.number().int().min(1).max(20));
 
 export function registerRepoCommand(
   program: Command,
@@ -19,6 +24,11 @@ export function registerRepoCommand(
       'Repository owner and name, for example octocat/Hello-World',
     )
     .option('--json', 'Output repository metrics as JSON')
+    .option(
+      '--languages <n>',
+      'Number of top table languages, from 1 to 20',
+      '5',
+    )
     .option('--no-color', 'Disable terminal colors')
     .option('--token <token>', 'GitHub token (overrides GITHUB_TOKEN)')
     .action(async (repository: string) => {
@@ -30,14 +40,24 @@ export function registerRepoCommand(
         return;
       }
       const options = command.optsWithGlobals<{
+        languages: string;
         json?: boolean;
         color?: boolean;
         token?: string;
       }>();
+      const parsedLanguages = languagesSchema.safeParse(options.languages);
+      if (!parsedLanguages.success) {
+        command.error('Languages must be an integer from 1 to 20.', {
+          exitCode: 2,
+        });
+        return;
+      }
       try {
         const snapshot = await loader(repository, resolveToken(options.token));
         const metrics = calculateRepositoryMetrics(snapshot);
-        process.stdout.write(`${formatRepository(metrics, options)}\n`);
+        process.stdout.write(
+          `${formatRepository(metrics, { ...options, languages: parsedLanguages.data })}\n`,
+        );
       } catch (error) {
         const message =
           error instanceof Error

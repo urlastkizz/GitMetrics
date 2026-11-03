@@ -170,14 +170,16 @@ The repository table includes name, primary language, stars, forks, and link. Te
 ### Repository metrics
 
 ```sh
-node dist/index.js repo <owner/name> [--json] [--no-color] [--token <token>]
+node dist/index.js repo <owner/name> [--languages <n>] [--json] [--no-color] [--token <token>]
 node dist/index.js repo octocat/Hello-World
 node dist/index.js repo octocat/Hello-World --json
+node dist/index.js repo microsoft/TypeScript --languages 1 --no-color
 ```
 
 | Flag              | Purpose                                              |
 | ----------------- | ---------------------------------------------------- |
 | `--json`          | Print repository metrics as one JSON object.         |
+| `--languages <n>` | Show the top 1–20 table languages; default: `5`.     |
 | `--no-color`      | Disable colors in the default table output.          |
 | `--token <token>` | Override `GITHUB_TOKEN`; authentication is optional. |
 | `-h, --help`      | Show command help.                                   |
@@ -196,7 +198,9 @@ Actual output from `node dist/index.js repo octocat/Hello-World --json`:
 }
 ```
 
-The default table shows the same metrics. Open issues exclude pull requests; all open PR pages are counted. Language percentages use bytes divided by total bytes, rounded independently to two decimals, and are sorted by descending bytes, then name. Their sum can differ slightly from 100. An empty language list appears as `[]` in JSON or `No languages` in the table.
+The default table shows the same metrics. Open issues exclude pull requests; all open PR pages are counted. Languages are sorted by descending bytes, then name. The table shows the top five languages by default and groups the rest into a final `Other` row. Use `--languages <n>` to select an integer from 1 through 20; invalid values exit with code `2`. No `Other` row appears when all languages fit within the limit.
+
+Table percentages are shown to two decimals and balanced to total exactly 100% for nonempty results. The rounding difference is applied to the largest displayed row, including `Other`, with ties resolved by existing order. JSON always keeps every language, regardless of `--languages`, with the original independently rounded percentages (bytes divided by total bytes); its sum can differ slightly from 100. An empty language list appears as `[]` in JSON or `No languages` in the table.
 
 The last commit date comes from the default branch's latest commit, normalized to UTC. An empty repository uses `lastCommitAt: null` or `No commits`. Private repositories and caching are outside this command's scope.
 
