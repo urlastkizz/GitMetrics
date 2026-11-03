@@ -86,6 +86,117 @@ it('documents all repository flags', async () => {
     program.parseAsync(['repo', '--help'], { from: 'user' }),
   ).rejects.toMatchObject({ exitCode: 0 });
   const output = stdout.mock.calls.flat().join('');
-  for (const flag of ['--json', '--token', '--no-color'])
+  for (const flag of ['--json', '--token', '--no-color', '--languages <n>'])
     expect(output).toContain(flag);
+  expect(output).toContain('from 1 to 20');
+  expect(output).toContain('default: "5"');
+});
+
+const languageBytes = Object.fromEntries(
+  Array.from({ length: 21 }, (_, index) => [
+    `Language${index + 1}`,
+    index === 0 ? 20 : 4,
+  ]),
+);
+it.each([
+  {
+    args: [],
+    expected: [
+      'Language1: 20.00%',
+      'Language2: 4.00%',
+      'Language3: 4.00%',
+      'Language4: 4.00%',
+      'Language5: 4.00%',
+      'Other: 64.00%',
+    ],
+  },
+  {
+    args: ['--languages', '1'],
+    expected: ['Language1: 20.00%', 'Other: 80.00%'],
+  },
+  {
+    args: ['--languages', '20'],
+    expected: [
+      ...Array.from(
+        { length: 20 },
+        (_, i) => `Language${i + 1}: ${i === 0 ? '20' : '4'}.00%`,
+      ),
+      'Other: 4.00%',
+    ],
+  },
+])('uses table language limit $args', async ({ args, expected }) => {
+  const { program, loader, stdout, stderr } = setup();
+  // Use the equal-byte fixture for exact percentages, with names in alphabetical order.
+  loader.mockResolvedValue({
+    ...snapshot,
+    languageBytes: Object.fromEntries(
+      Object.values(languageBytes).map((bytes, i) => [
+        `Language${String(i + 1).padStart(2, '0')}`,
+        bytes,
+      ]),
+    ),
+  });
+  await program.parseAsync(['repo', 'owner/name', '--no-color', ...args], {
+    from: 'user',
+  });
+  const rows = [
+    ...stdout.mock.calls
+      .flat()
+      .join('')
+      .matchAll(/(\w+): (\d+\.\d{2})%/g),
+  ].map(
+    ([, name, value]) => `${name?.replace(/Language0/, 'Language')}: ${value}%`,
+  );
+  expect(rows).toEqual(expected);
+  expect(stderr).not.toHaveBeenCalled();
+});
+
+it.each([
+  '0',
+  '21',
+  '-1',
+  '1.5',
+  'no',
+  '1e1',
+  '',
+  ' 2',
+  '2 ',
+  '+2',
+  'NaN',
+  'Infinity',
+])('rejects invalid language limit %j before loading', async (value) => {
+  const { program, loader, stdout, stderr } = setup();
+  await expect(
+    program.parseAsync(['repo', 'owner/name', '--languages', value], {
+      from: 'user',
+    }),
+  ).rejects.toMatchObject({ exitCode: 2 });
+  expect(stderr.mock.calls.flat().join('')).toBe(
+    'Languages must be an integer from 1 to 20.\n',
+  );
+  expect(stdout).not.toHaveBeenCalled();
+  expect(loader).not.toHaveBeenCalled();
+});
+
+it('keeps every JSON language when a table limit is supplied', async () => {
+  const { program, loader, stdout, stderr } = setup();
+  const bytes = { A: 40, B: 25, C: 15, D: 10, E: 5, F: 3, G: 2 };
+  loader.mockResolvedValue({ ...snapshot, languageBytes: bytes });
+  await program.parseAsync(
+    ['repo', 'owner/name', '--languages', '1', '--json'],
+    { from: 'user' },
+  );
+  expect(JSON.parse(String(stdout.mock.calls[0]?.[0]))).toEqual({
+    repository: 'owner/name',
+    stars: 12,
+    forks: 2,
+    openIssues: 3,
+    openPullRequests: 1,
+    languages: Object.entries(bytes).map(([name, percentage]) => ({
+      name,
+      percentage,
+    })),
+    lastCommitAt: null,
+  });
+  expect(stderr).not.toHaveBeenCalled();
 });
