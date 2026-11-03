@@ -4,7 +4,7 @@
 - Size: M (medium path approved by the author after initial S triage).
 - Branch: `feat/17-top-languages`
 - Base: `856f9db0ed1c63b74ba938bdd15d671c3c47d210`
-- Status: awaiting author approval before implementation.
+- Status: implemented; complete test audit and standard code review approved.
 
 ## Goal and acceptance criteria
 
@@ -98,4 +98,16 @@ The primary agent runs final verification, fetches and rebases onto `origin/main
 
 Plan review: APPROVED. The reviewer requested explicit rounding cases with a residual larger than one hundredth and with `Other` as the largest row; both are included above.
 
-Open questions: none identified by the planner or reviewer. The author must approve this plan before implementation.
+Open questions: none identified by the planner or reviewer. The author approved this plan before implementation.
+
+## Implementation evidence
+
+- Implementation commit: `ae6fd46` (`Refs #17`).
+- TDD: 42 new tests; grouping, CLI validation, and rounding failures observed before implementation.
+- Suite: 190 tests in 17 files passed; typecheck, lint, and build passed.
+- Core metrics coverage: 100% lines/statements, 96.42% branches.
+- Complete test audit: approved, criteria 7/7 covered; no test quality findings.
+- Mutation testing: not configured (no Stryker configuration or dependency).
+- Standard code review: approved; correctness, security, and architecture checks passed.
+- Primary-agent final verification: typecheck, lint, 190 tests, and build passed.
+- Built CLI: help lists the range/default; invalid limit 21 exits with code 2. Authenticated live verification of `microsoft/TypeScript --languages 1` displayed `Go: 85.17%` and `Other: 14.83%`; JSON retained all five languages. The initial unauthenticated attempt hit the GitHub rate limit and emitted a useful error.
