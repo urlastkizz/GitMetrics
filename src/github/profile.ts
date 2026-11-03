@@ -21,13 +21,19 @@ async function fetchGitHub<T>(
   username: string,
   token?: string,
 ): Promise<T> {
-  const response = await fetch(`https://api.github.com/users/${path}`, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    signal: AbortSignal.timeout(15_000),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`https://api.github.com/users/${path}`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (error) {
+    // Fetch errors can include Authorization values when header validation fails.
+    throw githubError(error);
+  }
 
   if (response.status === 401) throw githubError({ status: 401 });
 

@@ -42,13 +42,11 @@ describe('profile query', () => {
     vi.stubEnv('GITHUB_TOKEN', token);
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(JSON.stringify({ message: `Rejected ${token}` }), {
-            status: 401,
-          }),
-        ),
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: `Rejected ${token}` }), {
+          status: 401,
+        }),
+      ),
     );
     const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
     const stderr = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -61,6 +59,33 @@ describe('profile query', () => {
     );
     expect(output).not.toContain(token);
   });
+  it.each(['invalid header', 'network failure'])(
+    'sanitizes credentials from profile fetch errors: %s',
+    async (failure) => {
+      const token = 'github_pat_FAKE_TEST_ONLY\ninvalid';
+      vi.stubEnv('GITHUB_TOKEN', token);
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>().mockImplementation(async (_url, options) => {
+          if (failure === 'invalid header') new Headers(options?.headers);
+          throw new Error(`Network failure involving ${token}`);
+        }),
+      );
+      const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+      const stderr = vi.spyOn(console, 'error').mockImplementation(() => {});
+      await runCli(['node', 'gitmetrics', 'octocat', '--json']);
+      expect(process.exitCode).toBe(1);
+      expect(stdout).not.toHaveBeenCalled();
+      const output = stripVTControlCharacters(
+        stderr.mock.calls.flat().join(''),
+      );
+      expect(output).toBe(
+        'Error querying GitHub: Unable to connect to GitHub. Check your network connection and try again.',
+      );
+      expect(output).not.toContain(token);
+      expect(output).not.toContain('github_pat_FAKE_TEST_ONLY');
+    },
+  );
   it.each([true, false])(
     'keeps table cells readable with colors enabled: %s',
     (color) => {
@@ -261,14 +286,16 @@ describe('profile query', () => {
     expect(process.exitCode).toBe(1);
   });
 
-  it('reports unknown failures in English', async () => {
+  it('reports unknown fetch failures with safe connection guidance', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(null));
     const stderr = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await showProfile('octocat', false);
 
     expect(stderr).toHaveBeenCalledWith(
-      expect.stringContaining('Error querying GitHub: Unknown error.'),
+      expect.stringContaining(
+        'Error querying GitHub: Unable to connect to GitHub. Check your network connection and try again.',
+      ),
     );
     expect(process.exitCode).toBe(1);
   });
