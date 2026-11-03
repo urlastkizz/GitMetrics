@@ -154,11 +154,38 @@ it('explains missing token with code1 and no network', async () => {
   );
   expect(process.exitCode).toBe(1);
   expect(stderr.mock.calls.flat().join('')).toBe(
-    'Error: Activity requires a GitHub token. Set GITHUB_TOKEN or use --token <token>.\n',
+    'Error: Activity requires a GitHub token.\n' +
+      "PowerShell: $env:GITHUB_TOKEN = 'YOUR_TOKEN'\n" +
+      "bash/zsh: export GITHUB_TOKEN='YOUR_TOKEN'\n" +
+      'See https://github.com/urlastkizz/GitMetrics#authentication\n',
   );
   expect(stdout).not.toHaveBeenCalled();
   expect(loader).not.toHaveBeenCalled();
   expect(fetch).not.toHaveBeenCalled();
+});
+it('reports a rejected activity token without printing raw credentials', async () => {
+  const token = 'rejected-activity-placeholder';
+  const { loader, fetch, stdout, stderr } = setup();
+  fetch.mockResolvedValue(
+    new Response(JSON.stringify({ message: `Rejected ${token}` }), {
+      status: 401,
+      headers: { 'content-type': 'application/json' },
+    }),
+  );
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  await runCli(
+    ['node', 'gitmetrics', 'activity', 'octocat', '--token', token, '--json'],
+    undefined,
+    loader,
+  );
+  expect(process.exitCode).toBe(1);
+  expect(stdout).not.toHaveBeenCalled();
+  expect(stderr.mock.calls.flat().join('')).toBe(
+    'Error: GitHub rejected the token. It may be invalid or expired. Check --token or GITHUB_TOKEN.\n',
+  );
+  expect(stderr.mock.calls.flat().join('')).not.toContain(token);
+  expect(log).not.toHaveBeenCalled();
+  expect(loader.mock.calls[0]?.[2]).toBe(token);
 });
 it.each([
   [

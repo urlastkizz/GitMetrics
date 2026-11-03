@@ -12,7 +12,9 @@ export function githubError(error: unknown): Error {
   const status = parsed.success ? parsed.data.status : undefined;
   const headers = parsed.success ? parsed.data.response?.headers : undefined;
   if (status === 401)
-    return new Error('Invalid GitHub token. Check --token or GITHUB_TOKEN.');
+    return new Error(
+      'GitHub rejected the token. It may be invalid or expired. Check --token or GITHUB_TOKEN.',
+    );
   if (status === 404)
     return new Error(
       'Repository not found. Check the owner/name and public access.',

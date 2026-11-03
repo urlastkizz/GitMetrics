@@ -123,3 +123,46 @@ it.each([
   expect(stdout).not.toHaveBeenCalled();
   expect(loader).toHaveBeenCalledWith('owner/name', '');
 });
+it.each(['environment', 'explicit'])(
+  'reports HTTP 401 for a %s token without printing credentials',
+  async (source) => {
+    const token = 'rejected-repository-placeholder';
+    const { stdout, stderr } = setup();
+    vi.stubEnv(
+      'GITHUB_TOKEN',
+      source === 'environment' ? token : 'unused-environment-placeholder',
+    );
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ message: `Rejected ${token}` }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const loader = vi.fn((repository: string, suppliedToken?: string) =>
+      fetchRepository(repository, createGitHubClient(suppliedToken, fetch)),
+    );
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await runCli(
+      [
+        'node',
+        'gitmetrics',
+        'repo',
+        'owner/name',
+        '--json',
+        ...(source === 'explicit' ? ['--token', token] : []),
+      ],
+      loader,
+    );
+    expect(process.exitCode).toBe(1);
+    expect(loader).toHaveBeenCalledExactlyOnceWith('owner/name', token);
+    expect(stdout).not.toHaveBeenCalled();
+    expect(stderr.mock.calls.flat().join('')).toBe(
+      'Error: GitHub rejected the token. It may be invalid or expired. Check --token or GITHUB_TOKEN.\n',
+    );
+    expect(stderr.mock.calls.flat().join('')).not.toContain(token);
+    expect(stderr.mock.calls.flat().join('')).not.toContain(
+      'unused-environment-placeholder',
+    );
+    expect(log).not.toHaveBeenCalled();
+  },
+);

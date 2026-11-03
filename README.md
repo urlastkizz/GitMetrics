@@ -41,6 +41,75 @@ Expected output shape, shown here as an actual response captured on **2026-11-03
 
 All data examples below were also captured from this version against public GitHub data on that date. Counts and activity dates change when you run the commands again.
 
+## Authentication
+
+The default **profile** lookup (`gitmetrics <username>`) and **repo** can run anonymously. Set `GITHUB_TOKEN` to authenticate them for a higher REST API rate limit. **activity** requires a token because it uses GitHub's GraphQL API. For `repo` and `activity`, `--token <token>` overrides `GITHUB_TOKEN`; profile reads the environment variable only.
+
+### Create a token
+
+Create a fine-grained personal access token using [GitHub's token instructions](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token):
+
+1. Open GitHub **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+2. Name it (for example, `GitMetrics`), choose a short expiration, and select your account as the resource owner.
+3. Under **Repository access**, choose **Public repositories** (read-only). Fine-grained tokens already include read-only access to public repositories; do not grant private repository access or additional write/account permissions for these public queries.
+4. Generate the token and copy it into your shell configuration below. Replace `YOUR_TOKEN` with its value. Renew or replace it after expiration.
+
+### Configure your shell
+
+**PowerShell — current session:**
+
+```powershell
+$env:GITHUB_TOKEN = 'YOUR_TOKEN'
+```
+
+**PowerShell on Windows — permanent, for your user:**
+
+```powershell
+[Environment]::SetEnvironmentVariable('GITHUB_TOKEN', 'YOUR_TOKEN', 'User')
+```
+
+**cmd — current session:**
+
+```bat
+set "GITHUB_TOKEN=YOUR_TOKEN"
+```
+
+**cmd — permanent, for your Windows user:**
+
+```bat
+setx GITHUB_TOKEN "YOUR_TOKEN"
+```
+
+The Windows permanent settings apply to future terminals; they do not update the current session. Close and reopen your terminal application, or also run its current-session command. See [PowerShell environment variables](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_environment_variables) and [setx](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/setx).
+
+**bash/zsh — current session:**
+
+```sh
+export GITHUB_TOKEN='YOUR_TOKEN'
+```
+
+**bash — permanent for interactive shells:**
+
+```bash
+printf '\n%s\n' "export GITHUB_TOKEN='YOUR_TOKEN'" >> ~/.bashrc
+source ~/.bashrc
+```
+
+**zsh — permanent for interactive shells:**
+
+```zsh
+printf '\n%s\n' "export GITHUB_TOKEN='YOUR_TOKEN'" >> "${ZDOTDIR:-$HOME}/.zshrc"
+source "${ZDOTDIR:-$HOME}/.zshrc"
+```
+
+Run the permanent setup once; edit the existing entry when replacing a token. Bash login shells read the first available `~/.bash_profile`, `~/.bash_login`, or `~/.profile` instead of `~/.bashrc`. Ensure that login file sources `~/.bashrc`, or put the export in that login file. PowerShell on macOS/Linux can put its session assignment in `$PROFILE` instead of using Windows user environment settings. See the [Bash startup rules](https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html) and [zsh startup rules](https://zsh.sourceforge.io/Doc/Release/Files.html).
+
+### Keep tokens private
+
+Never commit tokens, including in scripts, shell startup files, or screenshots. `--token` can expose the value in shell history and process arguments; prefer an environment variable. The setup commands above can also enter shell history, and permanent configuration stores the value in your Windows user environment or shell startup file. Keep that configuration private. GitMetrics itself does not store tokens or load `.env` files.
+
+A missing activity token produces setup commands and a link to this section before any request. A rejected token (HTTP 401) produces a different message: `GitHub rejected the token. It may be invalid or expired.` Both failures exit with `1` without printing the token.
+
 ## Usage
 
 Use `node dist/index.js` after building, or `npm start --` to run the TypeScript source. For example, `npm start -- repo octocat/Hello-World --json` forwards the arguments after `--` to the CLI. The package and executable are named `gitmetrics`.
@@ -79,7 +148,7 @@ Actual output excerpt from `node dist/index.js octocat` (the repository table fo
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-The repository table includes name, primary language, stars, forks, and link. Terminal output supports colors and adapts column widths. Profile queries are anonymous and do not read `GITHUB_TOKEN`.
+The repository table includes name, primary language, stars, forks, and link. Terminal output supports colors and adapts column widths. Profile queries use `GITHUB_TOKEN` when configured, otherwise they run anonymously.
 
 ### Repository metrics
 
@@ -161,7 +230,7 @@ node dist/index.js --version
 
 Successful queries, help, and version exit with `0`; failed queries exit with `1`; invalid CLI usage exits with `2`. Query errors go to stderr, leaving stdout empty. Requests use a 15-second timeout without automatic retries.
 
-Repository and activity queries report invalid credentials, rate limits, missing resources, and network failures with useful error messages. Rate-limit errors include the UTC reset time when GitHub supplies it. Profile queries use a general query error message. Activity rejects partial GraphQL responses with errors and reports missing authentication before making a request.
+Repository and activity queries report rejected credentials, rate limits, missing resources, and network failures with useful error messages. Rate-limit errors include the UTC reset time when GitHub supplies it. Profile queries report rejected credentials explicitly and otherwise use a general query error message. Activity rejects partial GraphQL responses with errors and reports missing authentication before making a request.
 
 ## Development
 
@@ -190,7 +259,7 @@ tests/
   unit/             # Metrics, clients, formatters, configuration, and commands
 ```
 
-Repository and activity commands separate parsing, metric calculation, API access, and presentation. The current profile module still combines API access and output; extracting those responsibilities is future work.
+Repository and activity commands separate parsing, metric calculation, API access, and presentation. Profile requests also live in `src/github`; its existing tables remain in `src/cli/profile.ts`.
 
 The stack includes TypeScript in strict mode, Node.js, Commander, Octokit, Zod, picocolors, cli-table3, Vitest, and tsup. See [CONTRIBUTING.md](CONTRIBUTING.md) for the existing contribution workflow.
 

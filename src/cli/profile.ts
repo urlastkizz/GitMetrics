@@ -1,40 +1,11 @@
 import pc from 'picocolors';
 import Table from 'cli-table3';
 
-interface GitHubProfile {
-  login: string;
-  name: string | null;
-  bio: string | null;
-  public_repos: number;
-  followers: number;
-}
-
-interface GitHubRepository {
-  name: string;
-  language: string | null;
-  stargazers_count: number;
-  forks_count: number;
-  html_url: string;
-}
+import { resolveToken } from '../config/token.js';
+import { fetchProfile } from '../github/profile.js';
+import type { GitHubProfile, GitHubRepository } from '../github/profile.js';
 
 const numberFormat = new Intl.NumberFormat('en-US');
-
-async function fetchGitHub<T>(path: string, username: string): Promise<T> {
-  const response = await fetch(`https://api.github.com/users/${path}`, {
-    headers: { Accept: 'application/vnd.github+json' },
-    signal: AbortSignal.timeout(15_000),
-  });
-
-  if (response.status === 404) {
-    throw new Error(`GitHub user "${username}" not found.`);
-  }
-
-  if (!response.ok) {
-    throw new Error(`GitHub API returned status ${response.status}.`);
-  }
-
-  return (await response.json()) as T;
-}
 
 function displayProfile(profile: GitHubProfile): void {
   const width = Math.min(process.stdout.columns || 100, 100);
@@ -98,14 +69,10 @@ export async function showProfile(
   json: boolean,
 ): Promise<void> {
   try {
-    const userPath = encodeURIComponent(username);
-    const [profile, repositories] = await Promise.all([
-      fetchGitHub<GitHubProfile>(userPath, username),
-      fetchGitHub<GitHubRepository[]>(
-        `${userPath}/repos?type=owner&sort=created&direction=desc&per_page=5`,
-        username,
-      ),
-    ]);
+    const { profile, repositories } = await fetchProfile(
+      username,
+      resolveToken(),
+    );
 
     if (json) {
       process.stdout.write(`${JSON.stringify({ profile, repositories })}\n`);

@@ -2,14 +2,90 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { stripVTControlCharacters } from 'node:util';
 import { showProfile } from '../../src/cli/profile.js';
+import { runCli } from '../../src/cli/index.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   process.exitCode = 0;
 });
 
 describe('profile query', () => {
+  it.each(['', 'profile-token-placeholder'])(
+    'authenticates both profile requests only when configured: %s',
+    async (token) => {
+      vi.stubEnv('GITHUB_TOKEN', token);
+      const fetchMock = vi
+        .fn()
+        .mockImplementation(
+          async (url: string) =>
+            new Response(
+              JSON.stringify(
+                url.includes('/repos?') ? [] : { login: 'octocat' },
+              ),
+            ),
+        );
+      vi.stubGlobal('fetch', fetchMock);
+      vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+      await showProfile('octocat', true);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      for (const call of fetchMock.mock.calls) {
+        expect(new Headers(call[1]?.headers).get('authorization')).toBe(
+          token ? `Bearer ${token}` : null,
+        );
+      }
+    },
+  );
+  it('reports rejected profile authentication with code 1 and no raw credentials', async () => {
+    const token = 'rejected-profile-placeholder';
+    vi.stubEnv('GITHUB_TOKEN', token);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: `Rejected ${token}` }), {
+          status: 401,
+        }),
+      ),
+    );
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const stderr = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await runCli(['node', 'gitmetrics', 'octocat', '--json']);
+    expect(process.exitCode).toBe(1);
+    expect(stdout).not.toHaveBeenCalled();
+    const output = stripVTControlCharacters(stderr.mock.calls.flat().join(''));
+    expect(output).toBe(
+      'Error querying GitHub: GitHub rejected the token. It may be invalid or expired. Check --token or GITHUB_TOKEN.',
+    );
+    expect(output).not.toContain(token);
+  });
+  it.each(['invalid header', 'network failure'])(
+    'sanitizes credentials from profile fetch errors: %s',
+    async (failure) => {
+      const token = 'github_pat_FAKE_TEST_ONLY\ninvalid';
+      vi.stubEnv('GITHUB_TOKEN', token);
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>().mockImplementation(async (_url, options) => {
+          if (failure === 'invalid header') new Headers(options?.headers);
+          throw new Error(`Network failure involving ${token}`);
+        }),
+      );
+      const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+      const stderr = vi.spyOn(console, 'error').mockImplementation(() => {});
+      await runCli(['node', 'gitmetrics', 'octocat', '--json']);
+      expect(process.exitCode).toBe(1);
+      expect(stdout).not.toHaveBeenCalled();
+      const output = stripVTControlCharacters(
+        stderr.mock.calls.flat().join(''),
+      );
+      expect(output).toBe(
+        'Error querying GitHub: Unable to connect to GitHub. Check your network connection and try again.',
+      );
+      expect(output).not.toContain(token);
+      expect(output).not.toContain('github_pat_FAKE_TEST_ONLY');
+    },
+  );
   it.each([true, false])(
     'keeps table cells readable with colors enabled: %s',
     (color) => {
@@ -210,14 +286,16 @@ describe('profile query', () => {
     expect(process.exitCode).toBe(1);
   });
 
-  it('reports unknown failures in English', async () => {
+  it('reports unknown fetch failures with safe connection guidance', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(null));
     const stderr = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await showProfile('octocat', false);
 
     expect(stderr).toHaveBeenCalledWith(
-      expect.stringContaining('Error querying GitHub: Unknown error.'),
+      expect.stringContaining(
+        'Error querying GitHub: Unable to connect to GitHub. Check your network connection and try again.',
+      ),
     );
     expect(process.exitCode).toBe(1);
   });

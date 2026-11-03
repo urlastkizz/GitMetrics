@@ -53,7 +53,10 @@ export function registerActivityCommand(
       const token = resolveToken(options.token);
       if (!token?.trim()) {
         process.stderr.write(
-          'Error: Activity requires a GitHub token. Set GITHUB_TOKEN or use --token <token>.\n',
+          'Error: Activity requires a GitHub token.\n' +
+            "PowerShell: $env:GITHUB_TOKEN = 'YOUR_TOKEN'\n" +
+            "bash/zsh: export GITHUB_TOKEN='YOUR_TOKEN'\n" +
+            'See https://github.com/urlastkizz/GitMetrics#authentication\n',
         );
         process.exitCode = 1;
         return;

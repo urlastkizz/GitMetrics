@@ -4,7 +4,7 @@ import { activityError } from '../../../src/github/activity-errors.js';
 it.each([
   [
     { status: 401, message: 'secret-placeholder' },
-    'Invalid GitHub token. Check --token or GITHUB_TOKEN.',
+    'GitHub rejected the token. It may be invalid or expired. Check --token or GITHUB_TOKEN.',
   ],
   [
     { errors: [{ type: 'NOT_FOUND', message: 'secret-placeholder' }] },
