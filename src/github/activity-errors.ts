@@ -18,9 +18,7 @@ export function activityError(error: unknown): ActivityError {
   const types = details.errors?.map((item) => item.type) ?? [];
   const headers = details.headers ?? details.response?.headers;
   if (details.status === 401)
-    return new ActivityError(
-      'Invalid GitHub token. Check --token or GITHUB_TOKEN.',
-    );
+    return new ActivityError(githubError(error).message);
   if (details.status === 404 || types.includes('NOT_FOUND'))
     return new ActivityError('GitHub user not found. Check the username.');
   if (

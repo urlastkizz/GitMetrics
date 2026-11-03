@@ -97,19 +97,26 @@ it.each(['', '   '])(
     await program.parseAsync(['activity', 'octocat'], { from: 'user' });
     expect(process.exitCode).toBe(1);
     expect(stderr.mock.calls.flat().join('')).toBe(
-      'Error: Activity requires a GitHub token. Set GITHUB_TOKEN or use --token <token>.\n',
+      'Error: Activity requires a GitHub token.\n' +
+        "PowerShell: $env:GITHUB_TOKEN = 'YOUR_TOKEN'\n" +
+        "bash/zsh: export GITHUB_TOKEN='YOUR_TOKEN'\n" +
+        'See https://github.com/urlastkizz/GitMetrics#authentication\n',
     );
     expect(loader).not.toHaveBeenCalled();
     expect(stdout).not.toHaveBeenCalled();
   },
 );
 it('treats a blank override as missing even when environment is configured', async () => {
-  const { program, loader } = setup();
+  const { program, loader, stdout, stderr } = setup();
   await program.parseAsync(['activity', 'octocat', '--token', '  '], {
     from: 'user',
   });
   expect(process.exitCode).toBe(1);
   expect(loader).not.toHaveBeenCalled();
+  expect(stdout).not.toHaveBeenCalled();
+  expect(stderr.mock.calls.flat().join('')).not.toContain(
+    'environment-placeholder',
+  );
 });
 it.each(['@octocat', 'a/b', 'https://github.com/octocat', 'a b'])(
   'rejects malformed user %s',

@@ -2,14 +2,65 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { stripVTControlCharacters } from 'node:util';
 import { showProfile } from '../../src/cli/profile.js';
+import { runCli } from '../../src/cli/index.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   process.exitCode = 0;
 });
 
 describe('profile query', () => {
+  it.each(['', 'profile-token-placeholder'])(
+    'authenticates both profile requests only when configured: %s',
+    async (token) => {
+      vi.stubEnv('GITHUB_TOKEN', token);
+      const fetchMock = vi
+        .fn()
+        .mockImplementation(
+          async (url: string) =>
+            new Response(
+              JSON.stringify(
+                url.includes('/repos?') ? [] : { login: 'octocat' },
+              ),
+            ),
+        );
+      vi.stubGlobal('fetch', fetchMock);
+      vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+      await showProfile('octocat', true);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      for (const call of fetchMock.mock.calls) {
+        expect(new Headers(call[1]?.headers).get('authorization')).toBe(
+          token ? `Bearer ${token}` : null,
+        );
+      }
+    },
+  );
+  it('reports rejected profile authentication with code 1 and no raw credentials', async () => {
+    const token = 'rejected-profile-placeholder';
+    vi.stubEnv('GITHUB_TOKEN', token);
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ message: `Rejected ${token}` }), {
+            status: 401,
+          }),
+        ),
+    );
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const stderr = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await runCli(['node', 'gitmetrics', 'octocat', '--json']);
+    expect(process.exitCode).toBe(1);
+    expect(stdout).not.toHaveBeenCalled();
+    const output = stripVTControlCharacters(stderr.mock.calls.flat().join(''));
+    expect(output).toBe(
+      'Error querying GitHub: GitHub rejected the token. It may be invalid or expired. Check --token or GITHUB_TOKEN.',
+    );
+    expect(output).not.toContain(token);
+  });
   it.each([true, false])(
     'keeps table cells readable with colors enabled: %s',
     (color) => {

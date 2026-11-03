@@ -155,9 +155,15 @@ describe('GitHub client errors', () => {
     expect(githubError({ status: 429 }).message).toContain('unavailable');
   });
   it('sanitizes authentication, forbidden and network errors', () => {
-    expect(githubError({ status: 401, message: 'secret' }).message).toContain(
-      'Invalid GitHub token',
+    const rejected = githubError({
+      status: 401,
+      message: 'secret-placeholder',
+    });
+    expect(rejected.message).toBe(
+      'GitHub rejected the token. It may be invalid or expired. Check --token or GITHUB_TOKEN.',
     );
+    expect(rejected.message).not.toContain('secret-placeholder');
+    expect(rejected.message).not.toContain('requires a GitHub token');
     expect(githubError({ status: 403 }).message).toContain('denied');
     expect(githubError(new Error('secret')).message).toContain('connect');
   });
