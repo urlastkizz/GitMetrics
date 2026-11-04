@@ -25,20 +25,18 @@ function setup(
     .fn()
     .mockRejectedValue(new Error('Unexpected global network request'));
   vi.stubGlobal('fetch', unexpectedFetch);
-  const fetch = vi
-    .fn<typeof globalThis.fetch>()
-    .mockImplementation(
-      async () =>
-        new Response(JSON.stringify(data), {
-          status,
-          headers: {
-            'content-type': 'application/json',
-            'x-ratelimit-remaining': '0',
-            'x-ratelimit-reset': '1767225600',
-            link: '<https://api.github.com/repos/owner/name/pulls?page=2>; rel="next"',
-          },
-        }),
-    );
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
+    async () =>
+      new Response(JSON.stringify(data), {
+        status,
+        headers: {
+          'content-type': 'application/json',
+          'x-ratelimit-remaining': '0',
+          'x-ratelimit-reset': '1767225600',
+          link: '<https://api.github.com/repos/owner/name/pulls?page=2>; rel="next"',
+        },
+      }),
+  );
   const loader = vi.fn((repository: string, token?: string) =>
     fetchPullRequests(repository, createGitHubClient(token, fetch)),
   );

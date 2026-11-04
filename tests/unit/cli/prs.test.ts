@@ -10,16 +10,14 @@ afterEach(() => {
 });
 function setup() {
   const program = new Command().exitOverride();
-  const loader = vi
-    .fn()
-    .mockResolvedValue({
-      repository: 'owner/name',
-      pullRequests: Array.from({ length: 100 }, () => ({
-        createdAt: '2026-01-01T00:00:00Z',
-        closedAt: '2026-01-02T00:00:00Z',
-        mergedAt: '2026-01-02T00:00:00Z',
-      })),
-    });
+  const loader = vi.fn().mockResolvedValue({
+    repository: 'owner/name',
+    pullRequests: Array.from({ length: 100 }, () => ({
+      createdAt: '2026-01-01T00:00:00Z',
+      closedAt: '2026-01-02T00:00:00Z',
+      mergedAt: '2026-01-02T00:00:00Z',
+    })),
+  });
   registerPrsCommand(program, loader);
   const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
   const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
