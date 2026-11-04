@@ -4,11 +4,11 @@
 [![CI](https://github.com/urlastkizz/GitMetrics/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/urlastkizz/GitMetrics/actions/workflows/ci.yml?query=branch%3Amain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-GitMetrics is a TypeScript CLI for exploring GitHub from your terminal: `profile` shows a user's public profile and five newest repositories, `repo` summarizes a public repository, and `activity` measures recent user contributions. The profile lookup is the default command, invoked as `gitmetrics <username>`; there is no literal `profile` subcommand.
+GitMetrics is a TypeScript CLI for exploring GitHub from your terminal: `profile` shows a user's public profile and five newest repositories, `repo` summarizes a public repository, `prs` measures pull request merges, and `activity` measures recent user contributions. The profile lookup is the default command, invoked as `gitmetrics <username>`; there is no literal `profile` subcommand.
 
 Built to practice TypeScript, API integration, pure metric calculations, automated testing, and collaboration through Git branches and pull requests.
 
-[Authentication](#authentication): only `activity` requires a GitHub token; profile and public repository queries can run anonymously.
+[Authentication](#authentication): only `activity` requires a GitHub token; profile, `repo`, and `prs` queries can run anonymously.
 
 [Quick start](#quick-start) · [Installation](#installation) · [Usage](#usage) · [Authentication](#authentication) · [Development](#development)
 
@@ -47,13 +47,13 @@ Expected output, captured from the published **0.1.1** package on **2026-11-03**
 └───────────────────┴──────────────────────────┘
 ```
 
-All data examples below were also captured from the published **0.1.1** package against public GitHub data on that date. Counts and activity dates change when you run the commands again. Queries paginate GitHub results, so large repositories can take longer; anonymous requests may reach GitHub's rate limit. See [Authentication](#authentication) to use a token.
+Profile, repository, and activity examples below were also captured from the published **0.1.1** package against public GitHub data on that date. Pull request examples are illustrative and use the source build. Counts and activity dates change when you run the commands again. Repository queries paginate GitHub results, so large repositories can take longer; anonymous requests may reach GitHub's rate limit. See [Authentication](#authentication) to use a token.
 
 ## Requirements
 
 - **Node.js >=22.13.0**, matching `package.json`, and npm.
 - Internet access to install the package and query GitHub.
-- A GitHub token for `activity`. Profile queries and public repository queries can run without one.
+- A GitHub token for `activity`. Profile, `repo`, and `prs` queries can run without one.
 
 ## Installation
 
@@ -85,7 +85,7 @@ node dist/index.js repo octocat/Hello-World --json
 
 ## Authentication
 
-The default **profile** lookup (`gitmetrics <username>`) and **repo** can run anonymously. Set `GITHUB_TOKEN` to authenticate them for a higher REST API rate limit. **activity** requires a token because it uses GitHub's GraphQL API. For `repo` and `activity`, `--token <token>` overrides `GITHUB_TOKEN`; profile reads the environment variable only.
+The default **profile** lookup (`gitmetrics <username>`), **repo**, and **prs** can run anonymously. Set `GITHUB_TOKEN` to authenticate them for a higher REST API rate limit. **activity** requires a token because it uses GitHub's GraphQL API. For `repo`, `prs`, and `activity`, `--token <token>` overrides `GITHUB_TOKEN`; profile reads the environment variable only.
 
 ### Create a token
 
@@ -235,6 +235,64 @@ Table percentages are shown to two decimals and balanced to total exactly 100% f
 
 The last commit date comes from the default branch's latest commit, normalized to UTC. An empty repository uses `lastCommitAt: null` or `No commits`. Private repositories and caching are outside this command's scope.
 
+### Pull request merge metrics
+
+```sh
+gitmetrics prs <owner/name> [--limit <n>] [--json] [--no-color] [--token <token>]
+gitmetrics prs microsoft/vscode
+gitmetrics prs microsoft/vscode --limit 100 --json
+```
+
+The `prs` command is available in the source build; use `node dist/index.js prs ...` after building until a release includes it.
+
+| Flag              | Purpose                                                |
+| ----------------- | ------------------------------------------------------ |
+| `--limit <n>`     | Analyze 1–100 closed pull requests; default: `50`.     |
+| `--json`          | Print one JSON object with times in seconds or `null`. |
+| `--no-color`      | Disable colors in the table output.                    |
+| `--token <token>` | Override `GITHUB_TOKEN`; authentication is optional.   |
+| `-h, --help`      | Show command help.                                     |
+
+Illustrative table output:
+
+```text
+┌───────────────────────┬──────────────────┐
+│ Metric                │ owner/name       │
+├───────────────────────┼──────────────────┤
+│ PRs analyzed          │ 4                │
+├───────────────────────┼──────────────────┤
+│ Merged                │ 3                │
+├───────────────────────┼──────────────────┤
+│ Closed without merge  │ 1                │
+├───────────────────────┼──────────────────┤
+│ Merge rate            │ 75.00%           │
+├───────────────────────┼──────────────────┤
+│ Median time to merge  │ 2d 4h            │
+├───────────────────────┼──────────────────┤
+│ Average time to merge │ 2d 4h            │
+└───────────────────────┴──────────────────┘
+```
+
+Corresponding illustrative JSON:
+
+```json
+{
+  "repository": "owner/name",
+  "analyzed": 4,
+  "merged": 3,
+  "closedWithoutMerge": 1,
+  "mergeRate": 75,
+  "medianTimeToMergeSeconds": 187200,
+  "averageTimeToMergeSeconds": 187200
+}
+```
+
+“Last N” is approximate: one REST request fetches up to 100 closed PRs ordered by last update, then selects the requested N by closure date within that page. Older PRs updated recently can displace more recently closed PRs. The command does not paginate or guarantee the latest N closures across the whole repository; fewer than N candidates means a smaller sample. Bots are included, and dates are interpreted in UTC.
+
+A PR is merged when `merged_at` is non-null. Merge rate is merged divided by analyzed, multiplied by 100. Time to merge is `merged_at - created_at`; the median and arithmetic mean use only merged PRs. For an even count, the median averages the middle two durations. JSON retains numeric seconds without display rounding; the table truncates to whole seconds and uses days, hours, minutes, and seconds. Percentages display two decimals.
+
+No closed PRs produces `No closed pull requests`, zero counts, a zero merge rate, and null JSON times. A sample with no merges shows `0.00%` and `n/a` times (JSON: `null`). Invalid limits exit with code `2` before token lookup or API access.
+
 ### User activity
 
 ```sh
@@ -277,6 +335,7 @@ Active days have at least one contribution. The busiest day has the highest dail
 gitmetrics --help
 gitmetrics repo --help
 gitmetrics activity --help
+gitmetrics prs --help
 gitmetrics --version
 ```
 

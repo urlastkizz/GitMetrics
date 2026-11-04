@@ -5,6 +5,8 @@ import { registerRepoCommand } from './commands/repo.js';
 import type { RepositoryLoader } from '../core/types.js';
 import { registerActivityCommand } from './commands/activity.js';
 import type { ActivityLoader } from '../core/activity-types.js';
+import { registerPrsCommand } from './commands/prs.js';
+import type { PullRequestLoader } from '../core/prs-types.js';
 
 export async function runCli(
   args: string[],
@@ -13,6 +15,9 @@ export async function runCli(
   },
   activityLoader: ActivityLoader = async () => {
     throw new Error('Activity loader is unavailable.');
+  },
+  pullRequestLoader: PullRequestLoader = async () => {
+    throw new Error('Pull request loader is unavailable.');
   },
 ): Promise<void> {
   const program = new Command();
@@ -40,6 +45,7 @@ export async function runCli(
     );
   registerRepoCommand(program, repositoryLoader);
   registerActivityCommand(program, activityLoader);
+  registerPrsCommand(program, pullRequestLoader);
 
   try {
     await program.parseAsync(args);

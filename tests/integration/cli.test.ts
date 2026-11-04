@@ -53,11 +53,13 @@ describe('CLI', () => {
     expect(result.stdout).toContain('--json');
     expect(result.stdout).toContain('repo');
     expect(result.stdout).toContain('activity');
+    expect(result.stdout).toContain('prs');
     expect(result.stderr).toBe('');
   });
 
   it.each([
     ['repo', 'Show metrics for a public GitHub repository'],
+    ['prs', 'Show pull request merge metrics for a public GitHub repository'],
     [
       'activity',
       'Show recent GitHub contribution activity in UTC (requires a token)',
@@ -80,6 +82,13 @@ describe('CLI', () => {
       'Provide a GitHub username. Example: gitmetrics octocat',
     );
     expect(result.stderr).not.toContain(' at ');
+  });
+
+  it('rejects invalid prs limits from the executable before querying GitHub', () => {
+    const result = runCli('prs', 'owner/name', '--limit', '101');
+    expect(result.status).toBe(2);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('Limit must be an integer from 1 to 100.\n');
   });
 
   it('rejects unknown options', () => {
