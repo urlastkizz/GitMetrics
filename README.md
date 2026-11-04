@@ -20,6 +20,8 @@ Run a public repository query without cloning, building, or installing globally:
 npx @urlastkizz/gitmetrics repo microsoft/vscode
 ```
 
+[Preview the terminal screenshot](#repository-metrics).
+
 Expected output, captured from the published **0.1.1** package on **2026-11-03** (terminal colors omitted):
 
 ```text
@@ -198,6 +200,12 @@ gitmetrics repo octocat/Hello-World
 gitmetrics repo octocat/Hello-World --json
 gitmetrics repo microsoft/TypeScript --languages 1 --no-color
 ```
+
+Terminal output from `gitmetrics repo microsoft/vscode`:
+
+![GitMetrics terminal table for microsoft/vscode showing stars, forks, open issues, open PRs, language percentages, and the last commit in UTC](docs/images/gitmetrics-repo.png)
+
+The screenshot and Quick start text example show the same fields from different snapshots; counts and dates can change between queries.
 
 | Flag              | Purpose                                              |
 | ----------------- | ---------------------------------------------------- |
