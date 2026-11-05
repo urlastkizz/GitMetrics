@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative, resolve, sep } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import manifest from '../../package.json';
@@ -180,10 +180,17 @@ describe('npm production artifact', () => {
           JSON.stringify({
             private: true,
             // Reuse npm ci's dependencies without registry metadata or cache.
+            dependencies: Object.fromEntries(
+              Object.keys(manifest.dependencies).map((dependency) => [
+                dependency,
+                `file:${resolve('node_modules', dependency).split(sep).join('/')}`,
+              ]),
+            ),
+            // Reference direct specs so npm 10 and 11 resolve the same targets.
             overrides: Object.fromEntries(
               Object.keys(manifest.dependencies).map((dependency) => [
                 dependency,
-                `file:${relative(installation, resolve('node_modules', dependency)).split(sep).join('/')}`,
+                `$${dependency}`,
               ]),
             ),
           }),
