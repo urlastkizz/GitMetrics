@@ -356,6 +356,33 @@ npm run build
 
 Tests use mocked GitHub responses and run without network access. GitHub Actions checks Node.js 22, 24, and 26.
 
+### Package checks
+
+After `npm ci`, both commands build the package through `prepack`, even when
+`dist/` does not exist:
+
+```sh
+npm pack --dry-run
+npm publish --dry-run
+```
+
+Publishing runs typecheck, lint, and tests in `prepublishOnly`; `prepack` then
+builds the distributable once. `npm pack` builds without running publication
+checks. Avoid `--ignore-scripts` when preparing a package from a clean checkout.
+
+The executable mapping uses `dist/index.js` without a leading `./`. npm 11.19.1
+normalizes that prefix and otherwise prints the misleading warning
+`bin[gitmetrics] script name dist/index.js was invalid and removed`, even though
+the packed manifest retains `bin`. That warning was caused by path normalization,
+not by the missing build directory.
+
+On a clean checkout, npm 11.19.1 can still print `No bin file found at dist/index.js`
+before it runs lifecycle scripts. This preliminary warning is accepted: `prepack`
+creates the executable before npm collects package contents. Integration tests
+check the clean package, its installed manifest, and `gitmetrics --version`.
+The publish dry run also checks registry version availability; an already
+published version can make it fail even when package preparation succeeds.
+
 ```text
 src/
   index.ts          # Executable entry point

@@ -1,12 +1,20 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import manifest from '../../package.json';
 
-const stages = ['typecheck', 'lint', 'test', 'build'];
+const stages = ['typecheck', 'lint', 'test'];
 
 function runNpm(args: string[], cwd = process.cwd()) {
   // npm supplies its CLI path, avoiding platform-specific npm.cmd execution.
@@ -56,6 +64,37 @@ if (stage === ${JSON.stringify(failingStage ?? '')}) process.exit(1);
   }
 }
 
+function withCleanPackage(check: (directory: string) => void) {
+  const directory = mkdtempSync(join(tmpdir(), 'gitmetrics-clean-package-'));
+  try {
+    for (const path of ['src', 'tsup.config.ts', 'README.md', 'LICENSE']) {
+      cpSync(path, join(directory, path), { recursive: true });
+    }
+    symlinkSync(
+      resolve('node_modules'),
+      join(directory, 'node_modules'),
+      'junction',
+    );
+    writeFileSync(
+      join(directory, 'package.json'),
+      JSON.stringify({
+        ...manifest,
+        scripts: {
+          ...manifest.scripts,
+          // Exercise npm's lifecycle without recursively running this suite.
+          ...Object.fromEntries(
+            stages.map((stage) => [stage, 'node --version']),
+          ),
+        },
+      }),
+    );
+    expect(existsSync(join(directory, 'dist'))).toBe(false);
+    check(directory);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
 describe('npm package contract', () => {
   it('defines the public package metadata and distributable allowlist', () => {
     expect(manifest).toMatchObject({
@@ -70,7 +109,7 @@ describe('npm package contract', () => {
       },
       bugs: { url: 'https://github.com/urlastkizz/GitMetrics/issues' },
       homepage: 'https://github.com/urlastkizz/GitMetrics#readme',
-      bin: { gitmetrics: './dist/index.js' },
+      bin: { gitmetrics: 'dist/index.js' },
       engines: { node: '>=22.13.0' },
       files: ['dist', 'README.md', 'LICENSE'],
     });
@@ -97,6 +136,105 @@ describe('npm package contract', () => {
 });
 
 describe('npm production artifact', () => {
+  it.each(['publish', 'pack'])(
+    '%s builds a clean checkout before collecting package contents',
+    (command) => {
+      withCleanPackage((directory) => {
+        // Avoid consulting registry state for this already-published version.
+        const args =
+          command === 'publish'
+            ? ['publish', '--dry-run', '--force']
+            : ['pack', '--dry-run'];
+        const result = runNpm(args, directory);
+        expect(result.error).toBeUndefined();
+        expect(result.status, result.stderr).toBe(0);
+        expect(result.stdout + result.stderr).toContain('dist/index.js');
+        // npm 11 checks bin existence before lifecycle scripts can build it.
+        expect(result.stderr).not.toMatch(
+          /bin\[gitmetrics\].*invalid and removed/i,
+        );
+        expect(result.stderr).not.toContain('npm auto-corrected');
+        expect(readFileSync(join(directory, 'dist/index.js'), 'utf8')).toMatch(
+          /^#!\/usr\/bin\/env node/,
+        );
+        expect((result.stdout.match(/> tsup/g) ?? []).length).toBe(1);
+      });
+    },
+    30_000,
+  );
+
+  it('installs a tarball built from a clean checkout with a working CLI bin', () => {
+    withCleanPackage((directory) => {
+      const packed = runNpm(['pack', '--silent'], directory);
+      expect(packed.error).toBeUndefined();
+      expect(packed.status, packed.stderr).toBe(0);
+      const filename = z
+        .string()
+        .regex(/\.tgz$/)
+        .parse(packed.stdout.trim().split(/\r?\n/).at(-1));
+      expect(filename).toMatch(/\.tgz$/);
+      const installation = mkdtempSync(join(tmpdir(), 'gitmetrics-install-'));
+      try {
+        writeFileSync(
+          join(installation, 'package.json'),
+          JSON.stringify({
+            private: true,
+            // Reuse npm ci's dependencies without registry metadata or cache.
+            dependencies: Object.fromEntries(
+              Object.keys(manifest.dependencies).map((dependency) => [
+                dependency,
+                `file:${resolve('node_modules', dependency).split(sep).join('/')}`,
+              ]),
+            ),
+            // Reference direct specs so npm 10 and 11 resolve the same targets.
+            overrides: Object.fromEntries(
+              Object.keys(manifest.dependencies).map((dependency) => [
+                dependency,
+                `$${dependency}`,
+              ]),
+            ),
+          }),
+        );
+        const installed = runNpm(
+          [
+            'install',
+            '--ignore-scripts',
+            '--no-audit',
+            '--no-fund',
+            '--cache',
+            join(installation, 'npm-cache'),
+            join(directory, filename),
+          ],
+          installation,
+        );
+        expect(installed.error).toBeUndefined();
+        expect(installed.status, installed.stderr).toBe(0);
+        const installedManifest: unknown = JSON.parse(
+          readFileSync(
+            join(
+              installation,
+              'node_modules/@urlastkizz/gitmetrics/package.json',
+            ),
+            'utf8',
+          ),
+        );
+        expect(installedManifest).toMatchObject({
+          bin: { gitmetrics: 'dist/index.js' },
+          dependencies: manifest.dependencies,
+        });
+        const version = runNpm(
+          ['exec', '--', 'gitmetrics', '--version'],
+          installation,
+        );
+        expect(version.error).toBeUndefined();
+        expect(version.status, version.stderr).toBe(0);
+        expect(version.stdout.trim()).toBe(manifest.version);
+      } finally {
+        rmSync(installation, { recursive: true, force: true });
+      }
+    });
+  }, 30_000);
+
   beforeAll(() => {
     const result = runNpm(['run', 'build']);
     expect(result.error).toBeUndefined();
