@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import manifest from '../../package.json';
@@ -175,13 +175,27 @@ describe('npm production artifact', () => {
       expect(filename).toMatch(/\.tgz$/);
       const installation = mkdtempSync(join(tmpdir(), 'gitmetrics-install-'));
       try {
-        writeFileSync(join(installation, 'package.json'), '{"private":true}');
+        writeFileSync(
+          join(installation, 'package.json'),
+          JSON.stringify({
+            private: true,
+            // Reuse npm ci's dependencies without registry metadata or cache.
+            overrides: Object.fromEntries(
+              Object.keys(manifest.dependencies).map((dependency) => [
+                dependency,
+                `file:${relative(installation, resolve('node_modules', dependency)).split(sep).join('/')}`,
+              ]),
+            ),
+          }),
+        );
         const installed = runNpm(
           [
             'install',
             '--ignore-scripts',
             '--no-audit',
             '--no-fund',
+            '--cache',
+            join(installation, 'npm-cache'),
             join(directory, filename),
           ],
           installation,
@@ -199,6 +213,7 @@ describe('npm production artifact', () => {
         );
         expect(installedManifest).toMatchObject({
           bin: { gitmetrics: 'dist/index.js' },
+          dependencies: manifest.dependencies,
         });
         const version = runNpm(
           ['exec', '--', 'gitmetrics', '--version'],
