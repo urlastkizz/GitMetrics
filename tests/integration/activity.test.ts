@@ -38,10 +38,11 @@ afterEach(() => {
   process.exitCode = 0;
 });
 function setup(body: unknown = { data: calendar() }) {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
-    new Response(JSON.stringify(body), {
-      headers: { 'content-type': 'application/json' },
-    }),
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation(
+    async () =>
+      new Response(JSON.stringify(body), {
+        headers: { 'content-type': 'application/json' },
+      }),
   );
   const loader = vi.fn((user: string, period: ActivityPeriod, token: string) =>
     fetchActivity(user, period, createGitHubClient(token, fetch)),
@@ -81,6 +82,8 @@ it.each([
       ['Total contributions', '8'],
       ['Active days', '3'],
       ['Busiest day', '2026-01-02 (3 contributions)'],
+      ['Current streak', '3 days'],
+      ['Longest streak', '3 days'],
     ]);
     expect(output).not.toContain('\u001b');
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -96,13 +99,13 @@ it.each([
     const { loader, fetch, stdout, stderr } = setup();
     await runCli(['node', 'gitmetrics', ...args], undefined, loader);
     expect(stdout).toHaveBeenCalledExactlyOnceWith(
-      `${JSON.stringify({ user: 'Octocat', days: 3, startDate: '2025-12-31', endDate: '2026-01-02', totalContributions: 8, activeDays: 3, busiestDay: { date: '2026-01-02', count: 3 } })}\n`,
+      `${JSON.stringify({ user: 'Octocat', days: 3, startDate: '2025-12-31', endDate: '2026-01-02', totalContributions: 8, activeDays: 3, busiestDay: { date: '2026-01-02', count: 3 }, currentStreak: { days: 3, truncated: false }, longestStreak: { days: 3, truncated: false } })}\n`,
     );
     expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toHaveProperty(
       'variables',
       {
         login: 'octocat',
-        from: '2025-12-31T00:00:00.000Z',
+        from: '2025-01-03T00:00:00.000Z',
         to: '2026-01-02T03:04:05.000Z',
       },
     );
@@ -233,6 +236,105 @@ it('keeps inactive periods as zeros and a null busiest day', async () => {
     loader,
   );
   expect(stdout).toHaveBeenCalledExactlyOnceWith(
-    `${JSON.stringify({ user: 'Octocat', days: 1, startDate: '2026-01-02', endDate: '2026-01-02', totalContributions: 0, activeDays: 0, busiestDay: null })}\n`,
+    `${JSON.stringify({ user: 'Octocat', days: 1, startDate: '2026-01-02', endDate: '2026-01-02', totalContributions: 0, activeDays: 0, busiestDay: null, currentStreak: { days: 0, truncated: false }, longestStreak: { days: 0, truncated: false } })}\n`,
+  );
+});
+
+it.each([
+  { name: 'includes today', active: ['2026-01-01', '2026-01-02'], current: 2 },
+  { name: 'ends yesterday', active: ['2025-12-31', '2026-01-01'], current: 2 },
+  {
+    name: 'resets after two inactive days',
+    active: ['2025-12-30', '2025-12-31'],
+    current: 0,
+  },
+])(
+  'keeps streaks outside the requested totals period: $name',
+  async ({ active, current }) => {
+    const { loader, fetch, stdout, stderr } = setup({
+      data: calendar(active.map((date) => ({ date, contributionCount: 1 }))),
+    });
+    await runCli(
+      ['node', 'gitmetrics', 'activity', 'octocat', '--days', '1', '--json'],
+      undefined,
+      loader,
+    );
+    expect(JSON.parse(stdout.mock.calls.flat().join(''))).toMatchObject({
+      days: 1,
+      totalContributions: active.includes('2026-01-02') ? 1 : 0,
+      currentStreak: { days: current, truncated: false },
+      longestStreak: { days: 2, truncated: false },
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(
+      JSON.parse(String(fetch.mock.calls[0]?.[1]?.body)).variables,
+    ).toEqual({
+      login: 'octocat',
+      from: '2025-01-03T00:00:00.000Z',
+      to: '2026-01-02T03:04:05.000Z',
+    });
+    expect(stderr).not.toHaveBeenCalled();
+  },
+);
+
+it.each([2, 365])(
+  'prints an observed truncated %i-day streak in table and JSON',
+  async (length) => {
+    const contributionDays = Array.from({ length }, (_, index) => {
+      const date = new Date('2025-01-03T00:00:00Z');
+      date.setUTCDate(date.getUTCDate() + index);
+      return { date: date.toISOString().slice(0, 10), contributionCount: 1 };
+    });
+    const { loader, stdout, stderr } = setup({
+      data: calendar(contributionDays),
+    });
+    await runCli(
+      ['node', 'gitmetrics', 'activity', 'octocat', '--no-color'],
+      undefined,
+      loader,
+    );
+    const row = stdout.mock.calls
+      .flat()
+      .join('')
+      .split('\n')
+      .find((line) => line.includes('Longest streak'));
+    expect(row?.split('│')[2]?.trim()).toBe(`${length}+ days`);
+    stdout.mockClear();
+    await runCli(
+      ['node', 'gitmetrics', 'activity', 'octocat', '--json'],
+      undefined,
+      loader,
+    );
+    const output = JSON.parse(stdout.mock.calls.flat().join(''));
+    expect(output.longestStreak).toEqual({ days: length, truncated: true });
+    expect(output.currentStreak).toEqual(
+      length === 365
+        ? { days: 365, truncated: true }
+        : { days: 0, truncated: false },
+    );
+    expect(stderr).not.toHaveBeenCalled();
+  },
+);
+
+it('preserves rate limit messages and exit code', async () => {
+  const { loader, fetch, stdout, stderr } = setup();
+  fetch.mockResolvedValue(
+    new Response(JSON.stringify({ message: 'rate limit' }), {
+      status: 429,
+      headers: {
+        'content-type': 'application/json',
+        'x-ratelimit-reset': '1767326400',
+      },
+    }),
+  );
+  await runCli(
+    ['node', 'gitmetrics', 'activity', 'octocat', '--json'],
+    undefined,
+    loader,
+  );
+  expect(process.exitCode).toBe(1);
+  expect(stdout).not.toHaveBeenCalled();
+  expect(stderr.mock.calls.flat().join('')).toBe(
+    'Error: GitHub rate limit reached. Resets at 2026-01-02T04:00:00.000Z (UTC).\n',
   );
 });

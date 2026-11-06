@@ -10,6 +10,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
   process.exitCode = 0;
 });
@@ -24,6 +25,31 @@ function setup() {
   const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
   return { program, loader, stdout, stderr };
 }
+it('captures the clock once so totals and streaks share the same UTC day', async () => {
+  let captures = 0;
+  const instant = Date.parse('2026-01-02T23:59:59.999Z');
+  class AdvancingDate extends Date {
+    constructor(value?: string | number | Date) {
+      super(
+        value === undefined
+          ? instant + captures++
+          : value instanceof Date
+            ? value.getTime()
+            : value,
+      );
+    }
+  }
+  vi.stubGlobal('Date', AdvancingDate);
+  const { program, loader, stdout } = setup();
+  await program.parseAsync(['activity', 'octocat', '--days', '1', '--json'], {
+    from: 'user',
+  });
+  expect(captures).toBe(1);
+  expect(loader.mock.calls[0]?.[1].to).toBe('2026-01-02T23:59:59.999Z');
+  expect(JSON.parse(stdout.mock.calls.flat().join('')).endDate).toBe(
+    '2026-01-02',
+  );
+});
 it('defaults to 30 UTC days and uses an explicit token before environment', async () => {
   const { program, loader, stdout, stderr } = setup();
   await program.parseAsync(
@@ -33,10 +59,10 @@ it('defaults to 30 UTC days and uses an explicit token before environment', asyn
   expect(loader).toHaveBeenCalledExactlyOnceWith(
     'octocat',
     {
-      days: 30,
-      startDate: '2025-12-04',
+      days: 365,
+      startDate: '2025-01-03',
       endDate: '2026-01-02',
-      from: '2025-12-04T00:00:00.000Z',
+      from: '2025-01-03T00:00:00.000Z',
       to: '2026-01-02T03:04:05.000Z',
     },
     'explicit-placeholder',
@@ -44,6 +70,7 @@ it('defaults to 30 UTC days and uses an explicit token before environment', asyn
   expect(stdout.mock.calls.flat().join('')).toMatch(
     /│ Total contributions\s+│ 3\s+│/,
   );
+  expect(stdout.mock.calls.flat().join('')).toMatch(/│ Days\s+│ 30\s+│/);
   expect(stderr).not.toHaveBeenCalled();
 });
 it.each([1, 365])(
@@ -55,9 +82,17 @@ it.each([1, 365])(
       { from: 'user' },
     );
     expect(stdout).toHaveBeenCalledExactlyOnceWith(
-      `${JSON.stringify({ user: 'Octocat', days, startDate: days === 1 ? '2026-01-02' : '2025-01-03', endDate: '2026-01-02', totalContributions: 3, activeDays: 1, busiestDay: { date: '2026-01-02', count: 3 } })}\n`,
+      `${JSON.stringify({ user: 'Octocat', days, startDate: days === 1 ? '2026-01-02' : '2025-01-03', endDate: '2026-01-02', totalContributions: 3, activeDays: 1, busiestDay: { date: '2026-01-02', count: 3 }, currentStreak: { days: 1, truncated: false }, longestStreak: { days: 1, truncated: false } })}\n`,
     );
     expect(loader.mock.calls[0]?.[2]).toBe('environment-placeholder');
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(loader.mock.calls[0]?.[1]).toEqual({
+      days: 365,
+      startDate: '2025-01-03',
+      endDate: '2026-01-02',
+      from: '2025-01-03T00:00:00.000Z',
+      to: '2026-01-02T03:04:05.000Z',
+    });
     expect(stderr).not.toHaveBeenCalled();
   },
 );

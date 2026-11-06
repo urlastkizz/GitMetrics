@@ -31,6 +31,8 @@ it.each(['newest first', 'oldest first'])(
       totalContributions: 6,
       activeDays: 2,
       busiestDay: { date: '2026-01-02', count: 3 },
+      currentStreak: { days: 1, truncated: false },
+      longestStreak: { days: 2, truncated: false },
     });
     expect(JSON.parse(JSON.stringify(result))).toEqual(result);
   },
@@ -49,6 +51,8 @@ it.each([
     totalContributions: 0,
     activeDays: 0,
     busiestDay: null,
+    currentStreak: { days: 0, truncated: false },
+    longestStreak: { days: 0, truncated: false },
   });
 });
 it('selects a larger count over a more recent date', () => {
@@ -98,3 +102,26 @@ it('rejects invalid dates', () => {
     ),
   ).toThrow('invalid');
 });
+
+it.each([1, 30, 365])(
+  'keeps streaks independent of a %i-day totals period',
+  (days) => {
+    const result = calculateActivityMetrics(
+      {
+        user: 'octocat',
+        contributionDays: [
+          { date: '2025-01-03', count: 1 },
+          { date: '2025-01-04', count: 1 },
+          { date: '2026-01-01', count: 4 },
+          { date: '2026-01-02', count: 3 },
+        ],
+      },
+      createActivityPeriod(new Date(period.to), days),
+    );
+    expect(result.totalContributions).toBe(
+      days === 1 ? 3 : days === 365 ? 9 : 7,
+    );
+    expect(result.currentStreak).toEqual({ days: 2, truncated: false });
+    expect(result.longestStreak).toEqual({ days: 2, truncated: true });
+  },
+);
