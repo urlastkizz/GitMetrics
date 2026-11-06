@@ -61,9 +61,11 @@ export function registerActivityCommand(
         process.exitCode = 1;
         return;
       }
-      const period = createActivityPeriod(new Date(), parsedDays.data);
+      const now = new Date();
+      const period = createActivityPeriod(now, parsedDays.data);
+      const streakWindow = createActivityPeriod(now, 365);
       try {
-        const snapshot = await loader(user, period, token);
+        const snapshot = await loader(user, streakWindow, token);
         const metrics = calculateActivityMetrics(snapshot, period);
         process.stdout.write(`${formatActivity(metrics, options)}\n`);
       } catch (error) {

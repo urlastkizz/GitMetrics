@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { calculateStreaks } from './streaks.js';
 import type {
   ActivityMetrics,
   ActivityPeriod,
@@ -43,5 +44,6 @@ export function calculateActivityMetrics(
     totalContributions,
     activeDays,
     busiestDay,
+    ...calculateStreaks(snapshot.contributionDays, new Date(period.to)),
   };
 }

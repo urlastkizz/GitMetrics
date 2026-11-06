@@ -9,6 +9,8 @@ const metrics = {
   totalContributions: 7,
   activeDays: 2,
   busiestDay: { date: '2026-01-02', count: 5 },
+  currentStreak: { days: 2, truncated: false },
+  longestStreak: { days: 5, truncated: false },
 };
 it('associates every table metric with its exact value and disables ANSI', () => {
   const output = formatActivity(metrics, { color: false });
@@ -28,9 +30,33 @@ it('associates every table metric with its exact value and disables ANSI', () =>
     ['Total contributions', '7'],
     ['Active days', '2'],
     ['Busiest day', '2026-01-02 (5 contributions)'],
+    ['Current streak', '2 days'],
+    ['Longest streak', '5 days'],
   ]);
   expect(output).not.toContain('\u001b');
 });
+it.each([0, 2, 364, 365])(
+  'renders observed streak lengths and truncation: %i',
+  (days) => {
+    const result = {
+      ...metrics,
+      currentStreak: { days, truncated: days > 0 },
+      longestStreak: { days, truncated: days > 0 },
+    };
+    const output = formatActivity(result, { color: false });
+    const value = days > 0 ? `${days}+ days` : '0 days';
+    for (const label of ['Current streak', 'Longest streak']) {
+      expect(
+        output
+          .split('\n')
+          .find((line) => line.includes(label))
+          ?.split('│')[2]
+          ?.trim(),
+      ).toBe(value);
+    }
+    expect(JSON.parse(formatActivity(result, { json: true }))).toEqual(result);
+  },
+);
 it('returns exactly one JSON document matching all metrics', () => {
   expect(formatActivity(metrics, { json: true })).toBe(JSON.stringify(metrics));
 });

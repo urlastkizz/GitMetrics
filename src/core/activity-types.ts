@@ -1,3 +1,5 @@
+import type { Streak } from './metrics/streaks.js';
+
 export interface ActivityPeriod {
   days: number;
   startDate: string;
@@ -19,6 +21,8 @@ export interface ActivityMetrics {
   totalContributions: number;
   activeDays: number;
   busiestDay: { date: string; count: number } | null;
+  currentStreak: Streak;
+  longestStreak: Streak;
 }
 
 export type ActivityLoader = (

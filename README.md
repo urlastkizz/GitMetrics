@@ -311,7 +311,7 @@ Activity requires a GitHub token available through `GITHUB_TOKEN` or the explici
 | `--token <token>` | Override `GITHUB_TOKEN`; authentication is required.            |
 | `-h, --help`      | Show command help.                                              |
 
-Actual output from `gitmetrics activity octocat --days 7 --json`, with authentication already available:
+Illustrative source-build output from `gitmetrics activity octocat --days 7 --json`, including the new streak fields:
 
 ```json
 {
@@ -321,13 +321,28 @@ Actual output from `gitmetrics activity octocat --days 7 --json`, with authentic
   "endDate": "2026-11-03",
   "totalContributions": 0,
   "activeDays": 0,
-  "busiestDay": null
+  "busiestDay": null,
+  "currentStreak": { "days": 0, "truncated": false },
+  "longestStreak": { "days": 2, "truncated": true }
 }
 ```
 
 The command uses GitHub's GraphQL contribution calendar. It counts contributions exposed for the queried user and token, rather than repository commits. The period starts at UTC midnight on the first day and ends at the query's captured current instant; today's count is partial.
 
-Active days have at least one contribution. The busiest day has the highest daily count, with ties resolved to the most recent date. A period without contributions returns both totals as `0` and `busiestDay: null` (or `No contributions` in the table). Streaks, charts, contribution breakdowns, and caching are outside this command's scope.
+Active days have at least one contribution. The busiest day has the highest daily count, with ties resolved to the most recent date. A period without contributions returns both totals as `0` and `busiestDay: null` (or `No contributions` in the table).
+
+Streaks count consecutive active UTC days over a fixed **365-day window including today**, independent of `--days`. One GraphQL request supplies both the streak window and the selected period's totals. The current streak includes today when active; if today is inactive, an active yesterday keeps the streak alive. Two inactive days reset it to zero. The longest streak is the longest run within the window; if equal-length runs tie, a truncated run wins because it may have started earlier.
+
+A run touching the first day of the window keeps its observed length and has `truncated: true` in JSON. The table adds `+`, so a two-day boundary run appears as `2+ days`; all 365 days active yields `365+ days`. Runs that do not touch the start have `truncated: false`. No contributions in the window yields zero for both streaks, without truncation. Existing JSON fields retain their meaning; the two new fields each contain `days` and `truncated`.
+
+For the illustrative JSON above, the table shows these additional rows (the two-day run occurred at the start of the 365-day window):
+
+```text
+│ Current streak      │ 0 days  │
+│ Longest streak      │ 2+ days │
+```
+
+Charts, contribution breakdowns, and caching are outside this command's scope.
 
 ### Help and errors
 

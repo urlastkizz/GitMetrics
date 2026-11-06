@@ -1,6 +1,11 @@
 import Table from 'cli-table3';
 import { createColors } from 'picocolors';
 import type { ActivityMetrics } from '../core/activity-types.js';
+import type { Streak } from '../core/metrics/streaks.js';
+
+function formatStreak(streak: Streak): string {
+  return `${streak.days}${streak.truncated ? '+' : ''} days`;
+}
 
 export function formatActivity(
   metrics: ActivityMetrics,
@@ -23,6 +28,8 @@ export function formatActivity(
         ? `${metrics.busiestDay.date} (${metrics.busiestDay.count} contributions)`
         : 'No contributions',
     ],
+    ['Current streak', formatStreak(metrics.currentStreak)],
+    ['Longest streak', formatStreak(metrics.longestStreak)],
   );
   return table.toString();
 }
