@@ -1,6 +1,6 @@
 # Issue #30: Activity streaks
 
-Status: awaiting author approval.
+Status: approved by the author on 2026-11-05.
 Size: M (issue label).
 Base: `b30d2412a806c576d1b40a1a75766d8393e21095`.
 Branch: `feat/30-activity-streaks`.
